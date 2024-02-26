@@ -1,0 +1,13 @@
+[
+  {
+    "adminConsentDescription": "Allows the app to read data.",
+    "adminConsentDisplayName": "Read data",
+    "value": "Data.Read"
+  },
+  {
+    "adminConsentDescription": "Allows the app to write data.",
+    "adminConsentDisplayName": "Write data",
+    "value": "Data.Write"
+  }
+]
+
