@@ -20,7 +20,20 @@ $redirectUris = "$BaseAddress/authentication/login-callback"
 $SignInAudience = "AzureADMyOrg"
 
 # Define the path to your permissions JSON file
-$permissionsFilePath = ".\permissions.json"
+$permissionsJsonContent = 
+'[
+  {
+    \"adminConsentDescription\": \"Allows the app to read data.\",
+    \"adminConsentDisplayName\": \"Read data\",
+    \"value\": \"Data.Read\"
+  },
+  {
+    \"adminConsentDescription\": \"Allows the app to write data.\",
+    \"adminConsentDisplayName\": \"Write data\",
+    \"value\": \"Data.Write\"
+  }
+]'
+
 
 
 $AdminScopeDescription = "Administrator of World of Workflows."
@@ -180,7 +193,7 @@ az ad app update --id $ServerApp.Id --app-roles $jsonAppRole
 
 # Read and parse the permissions from the JSON file
 Write-Host "Building World of Workflows Permissions"
-$permissions = Get-Content $permissionsFilePath | ConvertFrom-Json
+$permissions = $permissionsJsonContent | ConvertFrom-Json
 
 # Initialize an array to hold the permission scopes with generated GUIDs
 $oauth2PermissionScopes = @()
