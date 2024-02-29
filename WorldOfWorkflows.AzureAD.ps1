@@ -1,7 +1,7 @@
 ﻿# Declare all of these as variables 
 #param ($ClientappName, $ServerappName, $BaseAddress, $redirectUris, $SignInAudience)
-Install-Module AzureAD -Scope CurrentUser
-
+Install-Module AzureAD -Force
+Import-Module -Name AzureAD
 
 $ClientappName = "World of Workflows Client"
 $ServerappName = "World of Workflows Server"
