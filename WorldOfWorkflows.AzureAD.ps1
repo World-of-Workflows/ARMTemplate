@@ -56,7 +56,7 @@ function CreateUniqueApp {
     function Get-AppList {
         param ($DisplayName)
        # $appList1 = az ad app list --display-name "$DisplayName" | ConvertFrom-Json
-        $appList = Get-AzureADApplication -Filter "DisplayName eq '$DisplayName'"
+        $appList = Get-AzADApplication -Filter "DisplayName eq '$DisplayName'"
         return $appList
     }
 
@@ -93,7 +93,7 @@ Write-Host "Requested to build Client Application with name '$ClientappName'"
 $ClientappName = CreateUniqueApp -AppName $ClientappName
 
 Write-Host "Creating Client Application with name '$ClientappName'"
-$ClientApp = New-AzureADApplication -DisplayName "$ClientappName" -ReplyUrls $redirectUris -RequiredResourceAccess  $($MSGraphPermissionsJson | ConvertFrom-Json) 
+$ClientApp = New-AzADApplication -DisplayName "$ClientappName" -ReplyUrls $redirectUris -RequiredResourceAccess  $($MSGraphPermissionsJson | ConvertFrom-Json) 
 
 Write-Host 'Updating Client Application with required Sign in Audience'
 Update-AzADApplication -ObjectId  $ClientApp.ObjectId   -SignInAudience $SignInAudience
