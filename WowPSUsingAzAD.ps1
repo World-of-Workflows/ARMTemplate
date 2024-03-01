@@ -1,13 +1,27 @@
-﻿$ClientappName = "World of Workflows Client"
+﻿# Declare all of these as variables 
+#param ($ClientappName, $ServerappName, $BaseAddress, $redirectUris, $SignInAudience)
+
+
+
+$ClientappName = "World of Workflows Client"
 $ServerappName = "World of Workflows Server"
 $BaseAddress = "https://mytest.azure.com"
 
+
+
+# Needs to be type list<string>
 $redirectUris = @(
     "$BaseAddress/authentication/login-callback",
     "$BaseAddress/swagger/oauth-redirect.html"
 )
+
+
+
 $SignInAudience = "AzureADMyOrg"
 
+
+
+# WOWF Permissions
 $WOWPermissionsJson = 
 '[
   {
@@ -44,6 +58,27 @@ $MSGraphPermissionsJson =
       ]
     }
 ]'
+
+
+$requiredMSGraphPermissions = @(
+
+    [PSCustomObject]@{
+        ResourceAppId = $MSGraphResourceId
+        ResourceAccess = @(
+
+            [PSCustomObject]@{
+                Id = $MSGraphUserReadPermission
+                Type = "Scope"
+            },
+
+            [PSCustomObject]@{
+                Id = $MSGraphUserReadBasicAll
+                Type = "Scope"
+            }
+        )
+    }
+)
+
 
 
 # Function to create a unique app name
@@ -87,6 +122,8 @@ function CreateUniqueApp {
 
 
 Write-Host "Adding World of Workflows to Tenancy"
+
+
 
 ## Creating the Client Application
 Write-Host "Requested to build Client Application with name '$ClientappName'"
@@ -145,6 +182,20 @@ $PreAuthorizedApplication  = @([PSCustomObject]@{
 Write-Host "Requested to build Server Application with name '$ServerappName'"
 $ServerappName = CreateUniqueApp -AppName $ServerappName
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 Write-Host "Creating Server Application with name '$ServerappName'"
 
 $ServerApp = New-AzADApplication -DisplayName "$ServerappName"  -Api @{ 
@@ -162,9 +213,14 @@ $passwordCred = @{
 
 Write-Host 'Updating Password to Server Application' 
 $ServerSecret = New-AzADAppCredential -ObjectId $ServerApp.Id -EndDate $passwordCred.endDateTime
-
+# $ServerSecret =  az ad app credential reset --id $ServerApp.appId --display-name $passwordCred.displayName --end-date $passwordCred.endDateTime | ConvertFrom-Json
 
 Write-Host "Server Application '$ServerAppName' built with Id: $($ServerApp.AppId)"
+
+
+
+
+
 
 
 #####  Creating the Scopes
@@ -175,17 +231,54 @@ $identifierUris = @("api://$($ServerApp.AppId)")
 Write-Host "Updating Server with  Identifier Uris"
 Update-AzADApplication -ObjectId  $ServerApp.Id -IdentifierUri  $identifierUris
 
+
+
+
 Write-Host "Retrieving Organisation"
 $org = Get-AzADOrganization
 
 
 Write-Host 'Building Output Variable'
 
-$DeploymentScriptOutputs['ClientAppId'] = $ClientApp.appId
-$DeploymentScriptOutputs['ServerAppId'] = $ServerApp.appId
-$DeploymentScriptOutputs['OrgId'] = $org.Id
-$DeploymentScriptOutputs['VerifiedDomainName'] = $org.VerifiedDomain[0].Name
-$DeploymentScriptOutputs['Secret'] = $ServerSecret.password
-$DeploymentScriptOutputs['BaseAddress'] = $BaseAddress  
+
+
+$AppInfo = [PSCustomObject]@{
+    ClientAppId = $ClientApp.appId
+    ServerAppId = $ServerApp.appId
+    OrgId = $org.Id
+    VerifiedDomainName = $org.VerifiedDomain[0].Name
+    Secret = $ServerSecret.password
+    BaseAddress = $BaseAddress    
+}
+
+
+echo $AppInfo > $AZ_SCRIPTS_OUTPUT_PATH
 
 Write-Host 'Done'
+
+
+
+
+# echo $appInfo > $AZ_SCRIPTS_OUTPUT_PATH
+
+
+
+
+
+
+#      "properties": {
+ #       "applicationId": "[reference(variables('cliResourceName')).outputs.appId]"
+ #     }
+
+# Things I need to output
+# $org.Id
+# $ClientApp.AppId
+
+# $ServerApp.AppId
+
+# $org.VerifiedDomains[0].Name
+
+
+# $ServerSecret.SecretText
+
+#$BaseAddress
