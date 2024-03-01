@@ -1,8 +1,8 @@
 ﻿# Declare all of these as variables 
 #param ($ClientappName, $ServerappName, $BaseAddress, $redirectUris, $SignInAudience)
-Install-Module Microsoft.Graph -Force
-Import-Module -Name Microsoft.Graph
-Connect-MgGraph -Identity
+#Install-Module Microsoft.Graph -Force
+#Import-Module -Name Microsoft.Graph
+#Connect-MgGraph -Identity
 
 $ClientappName = "World of Workflows Client"
 $ServerappName = "World of Workflows Server"
