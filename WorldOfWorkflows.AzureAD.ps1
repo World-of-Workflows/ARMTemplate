@@ -1,6 +1,6 @@
 ﻿# Declare all of these as variables 
 #param ($ClientappName, $ServerappName, $BaseAddress, $redirectUris, $SignInAudience)
-#Install-Module Microsoft.Graph -Force
+Install-Module Microsoft.Graph -Force
 Import-Module -Name Microsoft.Graph
 Connect-MgGraph -Identity
 
