@@ -28,7 +28,8 @@ $WOWPermissionsJson =
 
 # Variables around MSGraph Permissions
 $MSGraphPermissionsJson = 
-'[
+'
+[
     {
     "ResourceAppId": "00000003-0000-0000-c000-000000000000",
     "ResourceAccess": 
@@ -43,7 +44,33 @@ $MSGraphPermissionsJson =
         }
       ]
     }
-]'
+]
+'
+
+$permission = New-Object -Type 'Microsoft.Azure.PowerShell.Cmdlets.Resources.MSGraph.Models.ApiV10.MicrosoftGraphRequiredResourceAccess'
+
+
+# Without array
+
+$MSGraphPermissionsJson2 = 
+'
+    {
+    "ResourceAppId": "00000003-0000-0000-c000-000000000000",
+    "resourceAccess": 
+     [
+        {
+            "Id": "e1fe6dd8-ba31-4d61-89e7-88639da4683d",
+            "Type": "Scope"
+        },
+        {
+            "Id": "b340eb25-3456-403f-be2f-af7a0d370277",
+            "Type": "Scope"
+        }
+      ]
+    }
+'
+
+
 
 
 # Function to create a unique app name
@@ -93,7 +120,7 @@ Write-Host "Requested to build Client Application with name '$ClientappName'"
 $ClientappName = CreateUniqueApp -AppName $ClientappName
 
 Write-Host "Creating Client Application with name '$ClientappName'"
-$ClientApp = New-AzADApplication -DisplayName "$ClientappName" -ReplyUrls $redirectUris -RequiredResourceAccess  $($MSGraphPermissionsJson | ConvertFrom-Json) 
+$ClientApp = New-AzADApplication -DisplayName "$ClientappName" -ReplyUrls $redirectUris -RequiredResourceAccess  ($MSGraphPermissionsJson | ConvertFrom-Json -NoEnumerate -AsHashtable) 
 
 Write-Host 'Updating Client Application with required Sign in Audience'
 Update-AzADApplication -ObjectId  $ClientApp.ObjectId   -SignInAudience $SignInAudience
