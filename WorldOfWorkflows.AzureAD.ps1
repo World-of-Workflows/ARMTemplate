@@ -1,7 +1,8 @@
 ﻿# Declare all of these as variables 
 #param ($ClientappName, $ServerappName, $BaseAddress, $redirectUris, $SignInAudience)
-Install-Module AzureAD -Force
-Import-Module -Name AzureAD
+Install-Module Microsoft.Graph -Force
+Import-Module -Name Microsoft.Graph
+Connect-MgGraph -Identity
 
 $ClientappName = "World of Workflows Client"
 $ServerappName = "World of Workflows Server"
@@ -91,7 +92,7 @@ function CreateUniqueApp {
     function Get-AppList {
         param ($DisplayName)
        # $appList1 = az ad app list --display-name "$DisplayName" | ConvertFrom-Json
-        $appList = Get-AzureADApplication -Filter "DisplayName eq '$DisplayName'"
+        $appList = Get-MgApplication -Filter "DisplayName eq '$DisplayName'"
         return $appList
     }
 
@@ -130,13 +131,14 @@ Write-Host "Requested to build Client Application with name '$ClientappName'"
 $ClientappName = CreateUniqueApp -AppName $ClientappName
 
 Write-Host "Creating Client Application with name '$ClientappName'"
-$ClientApp = New-AzureADApplication -DisplayName "$ClientappName" -ReplyUrls $redirectUris -RequiredResourceAccess  $($MSGraphPermissionsJson | ConvertFrom-Json) 
-
-Write-Host 'Updating Client Application with required Sign in Audience'
-Update-AzADApplication -ObjectId  $ClientApp.ObjectId   -SignInAudience $SignInAudience
+$ClientApp = New-MgApplication -DisplayName "$ClientappName" -Spa @{ RedirectUris = $redirectUris } -RequiredResourceAccess  $($MSGraphPermissionsJson | ConvertFrom-Json) 
 
 
 Write-Host "Client Application '$ClientAppName' built with Id: $ClientApp.AppId"
+
+
+
+
 
 
 #####  Creating the Server Application
@@ -144,6 +146,7 @@ Write-Host "Client Application '$ClientAppName' built with Id: $ClientApp.AppId"
 
 # Read and parse the permissions from the JSON file
 Write-Host "Building World of Workflows Permissions"
+
 $permissions = $WOWPermissionsJson | ConvertFrom-Json
 
 # Initialize an array to hold the permission scopes with generated GUIDs
@@ -170,72 +173,57 @@ foreach ($perm in $permissions) {
 }
 
 
-$preAuthorizedApplication = New-Object 'Microsoft.Open.AzureAD.Model.PreAuthorizedApplication'
-$preAuthorizedApplication.AppId = $ClientApp.Appid
-$preAuthorizedApplication.Permissions = $delegatedPermissionIds
-
-$PreAuthorizedApplications = New-Object 'System.Collections.Generic.List[Microsoft.Open.AzureAD.Model.PreAuthorizedApplication]'
-$PreAuthorizedApplications.Add($preAuthorizedApplication)
-
-
-
-
-$PreAuthorizedApplication  = [PSCustomObject]@{
-        AppId = $ClientApp.Appid
-        DelegatedPermissionIds = $delegatedPermissionIds
-}
-
-
 
 Write-Host "Requested to build Server Application with name '$ServerappName'"
 $ServerappName = CreateUniqueApp -AppName $ServerappName
 
 Write-Host "Creating Server Application with name '$ServerappName'"
-$ServerApp = New-AzureADApplication -DisplayName "$ServerappName" -Oauth2Permissions $oauth2PermissionRequest -PreAuthorizedApplications $PreAuthorizedApplication
+# $ServerApp = New-AzureADApplication -DisplayName "$ServerappName" -Oauth2Permissions $oauth2PermissionRequest -PreAuthorizedApplications $PreAuthorizedApplication
+
+New-MgApplication -DisplayName "$ServerappName" -Api @{ 
+    Oauth2PermissionScopes = $oauth2PermissionScopes 
+    PreAuthorizedApplications = $PreauthApplication
+}
+
+
 
 #### Creating Secret for the Server Application
 Write-Host 'Generating Password for Server Application'
+
+# Define the client secret parameters
 $passwordCred = @{
     displayName = "Automated Secret"
     endDateTime = (Get-Date).AddYears(1)
 }
 
+
 Write-Host 'Updating Password to Server Application' 
-$ServerSecret = New-AzureADApplicationPasswordCredential -ObjectId $ServerApp.ObjectId  -CustomKeyIdentifier $passwordCred.displayName -EndDate $passwordCred.endDateTime
-# $ServerSecret =  az ad app credential reset --id $ServerApp.appId --display-name $passwordCred.displayName --end-date $passwordCred.endDateTime | ConvertFrom-Json
+# Create the client secret
+$ServerSecret = Add-MgApplicationPassword -ApplicationId $ServerApp.Id -PasswordCredential $passwordCred
 
-Write-Host "Server Application '$ServerAppName' built with Id: $($ServerApp.AppId)"
-
-
-
-#####  Creating the Scopes
-
+#####  Creating the Identifier URI
 Write-Host "Definiting Identifier Uris"
 $identifierUris = @("api://$($ServerApp.AppId)")
 
 Write-Host "Updating Server with  Identifier Uris"
-Update-AzADApplication -ObjectId  $ServerApp.ObjectId -IdentifierUri  $identifierUris
+Update-MgApplication -ObjectId  $ServerApp.ObjectId -IdentifierUri  $identifierUris
 
 
+Write-Host "Server Application '$ServerAppName' built with Id: $($ServerApp.AppId)"
+
+Write-Host 'Building Output Variables'
+
+Write-Host "Retrieving Organisation"
+$org = Get-MgOrganization
 
 
-Write-Host "Retrieving Tenancies First Verified Domain"
-$response = az rest --method get --uri https://graph.microsoft.com/v1.0/domains | ConvertFrom-Json
-
-$verifiedDomainName = $response.value | Where-Object { $_.isVerified -eq $true } | Select-Object -First 1 -ExpandProperty id
-
-
-Write-Host 'Retrieving Tenant Id for Outputs'
-$orgId=$(az account show --query tenantId -o tsv)
-
-
-Write-Host 'Building Output Variable'
+Write-Host 'Outputting Variable'
 
 $AppInfo = [PSCustomObject]@{
     ClientAppId = $ClientApp.appId
     ServerAppId = $ServerApp.appId
-    OrgId = $orgId
-    VerifiedDomainName = $verifiedDomainName
+    OrgId = $org.Id
+    VerifiedDomainName = $org.VerifiedDomains[0].Name
     Secret = $ServerSecret.password
     BaseAddress = $BaseAddress    
 }
