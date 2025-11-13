@@ -2230,7 +2230,7 @@
           ' -StorageAccountName ', '\"', variables('storageAccountNameFinal'), '\"',
           ' -CompanyNameForWoWLicence ', '\"', parameters('companyNameForWoWLicence'), '\"',
           ' -BillingEmailForWoWLicence ', '\"', parameters('billingEmailForWoWLicence'), '\"',
-          ' -AdminUserPrincipalName ', '\"', parameters('adminUserPrincipalName'), '\"',
+          ' -AdminUserPrincipalName ', '\"', parameters('adminUserPrincipalName'), '\"'
          
 
         )]",
