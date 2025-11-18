@@ -130,14 +130,9 @@ if (-not $ServerApp -or [string]::IsNullOrWhiteSpace($ServerApp.Id)) {
 }
 
 
-$serverAppCurrent = Get-AzADApplication -ObjectId $ServerApp.Id -ErrorAction Stop
+$serverAppCurrent = Get-AzADApplication -ObjectId $ServerApp.Id -Select "AppRoles" -ErrorAction Stop
 
-$needsServerApiConfiguration = $true
-if (-not $serverAppIsNew -and $serverAppCurrent.Api -and $serverAppCurrent.Api.Oauth2PermissionScopes -and $serverAppCurrent.Api.Oauth2PermissionScopes.Count -gt 0) {
-    $needsServerApiConfiguration = $false
-}
-
-if ($needsServerApiConfiguration) {
+if ($serverAppIsNew) {
     # Now Creating Identifier URLs
      $identifierUris = @(
         "api://" + $ServerApp.AppId
@@ -213,7 +208,7 @@ else {
     Write-Host "Server app already contains API scopes; skipping scope and pre-authorization configuration."
 }
 
-$serverAppCurrent = Get-AzADApplication -ObjectId $ServerApp.Id -ErrorAction Stop
+$serverAppCurrent = Get-AzADApplication -ObjectId $ServerApp.Id -Select "AppRoles" -ErrorAction Stop
 
 # Now add the Administrator Role
 
@@ -386,8 +381,7 @@ function Write-GraphResponseDetails {
 }
 
 $assignmentExists = $false
-$filter = "resourceId eq $($ServerSp.Id) and appRoleId eq $adminAppRoleId"
-$assignmentCheckUrl = "https://graph.microsoft.com/v1.0/users/$($AdminUser.Id)/appRoleAssignments?`$filter=$([System.Uri]::EscapeDataString($filter))"
+$assignmentCheckUrl = "https://graph.microsoft.com/v1.0/users/$($AdminUser.Id)/appRoleAssignments?`$top=999"
 try {
     $checkResponse = Invoke-WebRequest `
         -Uri $assignmentCheckUrl `
@@ -396,10 +390,15 @@ try {
         -SkipHttpErrorCheck
 
     if ($checkResponse.StatusCode -ge 200 -and $checkResponse.StatusCode -lt 300) {
-        $existingAssignmentResponse = $checkResponse.Content | ConvertFrom-Json
-        if ($existingAssignmentResponse.value -and $existingAssignmentResponse.value.Count -gt 0) {
-            $assignmentExists = $true
-            Write-Host "Administrator role already assigned to $AdminUserPrincipalName – skipping."
+        $existingAssignments = $checkResponse.Content | ConvertFrom-Json
+        if ($existingAssignments.value) {
+            $matchingAssignment = $existingAssignments.value | Where-Object {
+                $_.resourceId -eq $ServerSp.Id -and $_.appRoleId -eq $adminAppRoleId
+            }
+            if ($matchingAssignment) {
+                $assignmentExists = $true
+                Write-Host "Administrator role already assigned to $AdminUserPrincipalName – skipping."
+            }
         }
     }
     elseif ($checkResponse.StatusCode -ne 404) {
