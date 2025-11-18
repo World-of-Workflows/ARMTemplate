@@ -130,7 +130,15 @@ if (-not $ServerApp -or [string]::IsNullOrWhiteSpace($ServerApp.Id)) {
 }
 
 
-$serverAppCurrent = Get-AzADApplication -ObjectId $ServerApp.Id -ErrorAction Stop
+$serverAppCurrent = Get-AzADApplication -ObjectId $ServerApp.Id -Select "AppRoles" -ErrorAction Stop
+if ($serverAppCurrent.AppRoles) {
+    Write-Host "Server app has $($serverAppCurrent.AppRoles.Count) existing app roles."
+    $serverAppCurrent.AppRoles | ForEach-Object {
+        Write-Host ("  Role: {0} ({1}) Enabled={2}" -f $_.DisplayName, $_.Id, $_.IsEnabled)
+    }
+} else {
+    Write-Host "Server app has no existing app roles."
+}
 
 if ($serverAppIsNew) {
     # Now Creating Identifier URLs
@@ -208,7 +216,7 @@ else {
     Write-Host "Server app already contains API scopes; skipping scope and pre-authorization configuration."
 }
 
-$serverAppCurrent = Get-AzADApplication -ObjectId $ServerApp.Id -ErrorAction Stop
+$serverAppCurrent = Get-AzADApplication -ObjectId $ServerApp.Id -Select "AppRoles" -ErrorAction Stop
 
 # Now add the Administrator Role
 
@@ -241,6 +249,14 @@ else {
 
 if (-not $adminAppRoleId) {
     throw "Administrator app role Id could not be determined. Check the existing AppRoles on $ServerappName."
+}
+
+$roleExistsOnApplication = $serverAppCurrent.AppRoles | Where-Object { $_.Id -eq $adminAppRoleId }
+if (-not $roleExistsOnApplication) {
+    Write-Warning "App role Id $adminAppRoleId not found on application $($ServerApp.DisplayName). Available roles:"
+    $serverAppCurrent.AppRoles | ForEach-Object {
+        Write-Host ("  {0} - {1}" -f $_.DisplayName, $_.Id)
+    }
 }
 # --- Ensure a service principal (enterprise app) exists for the server app ---
 $ServerSp = Get-AzADServicePrincipal -Filter "appId eq '$($ServerApp.AppId)'"
@@ -356,6 +372,10 @@ catch {
 
 $assignUrl = "https://graph.microsoft.com/v1.0/users/$($AdminUser.Id)/appRoleAssignments"
 
+if (-not $roleExistsOnApplication) {
+    Write-Warning "Skipping Graph assignment because app role Id $adminAppRoleId does not exist on the application."
+}
+else {
 $assignmentBody = @{
     principalId = $AdminUser.Id   # user
     resourceId  = $ServerSp.Id    # service principal for TRIBETECHWorkflowsServer
@@ -439,6 +459,9 @@ if (-not $assignmentExists) {
         Write-Host $_.Exception.Message -ForegroundColor Yellow
     }
 }
+# end of roleExists guard
+}
+
 # Write-Host "sending token >>"
 # Write-Host $token
 # Write-Host "<<"
