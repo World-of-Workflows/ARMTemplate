@@ -600,7 +600,7 @@ Write-Host ""
 # 5a. Ensure file share is created
 # ------------------------------------------------
 
-# $share = Ensure-WowFileShare -ResourceGroupName $ResourceGroupName -StorageAccountName $StorageAccountName
+$share = Ensure-WowFileShare -ResourceGroupName $ResourceGroupName -StorageAccountName $StorageAccountName
 # ------------------------------------------------
 # 6. Ensure Web App (Linux, .NET 8)
 # ------------------------------------------------
