@@ -389,6 +389,66 @@ if (-not $AdminUserPrincipalName) {
     $AdminUserPrincipalName = Read-HostDefault "Enter Admin user UPN (e.g. jimc.admin@customer.com)" $ctx.Account.Id
 }
 
+if (-not $PSBoundParameters.ContainsKey('Location') -or [string]::IsNullOrWhiteSpace($Location)) {
+    $defaultLocation = "australiaeast"
+    $resolvedLocation = $null
+
+    try {
+        $availableLocations = Get-AzLocation -ErrorAction Stop | Sort-Object Location
+    }
+    catch {
+        Write-Warning "Unable to retrieve Azure locations for this subscription. Defaulting to $defaultLocation."
+        $availableLocations = @()
+    }
+
+    if ($availableLocations -and $availableLocations.Count -gt 0) {
+        $locationOptions = $availableLocations | Select-Object -Property Location, DisplayName
+
+        Write-Host ""
+        Write-Host "Available Azure locations:" -ForegroundColor Cyan
+        for ($i = 0; $i -lt $locationOptions.Count; $i++) {
+            $entry = $locationOptions[$i]
+            Write-Host ("  [{0}] {1} ({2})" -f $i, $entry.DisplayName, $entry.Location)
+        }
+
+        do {
+            $rawInput = Read-HostChooseDefault "Enter location number or short name" $defaultLocation ($locationOptions.Location)
+            if ([string]::IsNullOrWhiteSpace($rawInput)) {
+                $rawInput = $defaultLocation
+            }
+
+            $candidate = $null
+            if ($rawInput -match '^\d+$') {
+                $index = [int]$rawInput
+                if ($index -ge 0 -and $index -lt $locationOptions.Count) {
+                    $candidate = $locationOptions[$index]
+                }
+            }
+            else {
+                $rawInputLower = $rawInput.ToLower()
+                $candidate = $locationOptions | Where-Object {
+                    $_.Location.ToLower() -eq $rawInputLower -or $_.DisplayName.ToLower() -eq $rawInputLower
+                }
+            }
+
+            if ($candidate) {
+                $resolvedLocation = $candidate.Location.ToLower()
+            }
+            else {
+                Write-Host "Invalid location selection. Please try again." -ForegroundColor Yellow
+            }
+        } while (-not $resolvedLocation)
+
+        $Location = $resolvedLocation
+    }
+    else {
+        $Location = $defaultLocation
+    }
+}
+else {
+    $Location = $Location.ToLower()
+}
+
 # Friendly numeric choice for Business Edition solution
 
 $defaultChoice = '1'

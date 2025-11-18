@@ -399,6 +399,33 @@ if (-not $AdminUser) {
     throw "Could not find user with UPN '$AdminUserPrincipalName'"
 }
 
+Write-Host "Ensuring admin user is listed as an owner of the server enterprise app..."
+try {
+    $existingOwners = Get-AzADServicePrincipalOwner -ObjectId $ServerSp.Id -ErrorAction Stop
+}
+catch {
+    Write-Warning "Unable to retrieve current service principal owners: $($_.Exception.Message)"
+    $existingOwners = @()
+}
+
+$ownerExists = $false
+if ($existingOwners) {
+    $ownerExists = $existingOwners | Where-Object { $_.Id -eq $AdminUser.Id }
+}
+
+if (-not $ownerExists) {
+    try {
+        Add-AzADServicePrincipalOwner -ObjectId $ServerSp.Id -RefObjectId $AdminUser.Id -ErrorAction Stop | Out-Null
+        Write-Host "Added $AdminUserPrincipalName as an owner of the server enterprise app."
+    }
+    catch {
+        Write-Warning "Failed to add $AdminUserPrincipalName as an owner of the server enterprise app: $($_.Exception.Message)"
+    }
+}
+else {
+    Write-Host "$AdminUserPrincipalName is already an owner of the server enterprise app."
+}
+
 Write-Host "Ensuring admin user is assigned to server app with Administrator role..."
 # Get token for Microsoft Graph
 # 1. Get a proper Graph token
