@@ -13,6 +13,24 @@ param(
 )
 # Setup Variables
 
+trap {
+    Write-Host ""
+    Write-Host "TERMINATING ERROR: $($_.Exception.Message)" -ForegroundColor Red
+    if ($_.InvocationInfo) {
+        $inv = $_.InvocationInfo
+        Write-Host ("  File : {0}" -f $inv.PSCommandPath) -ForegroundColor Yellow
+        Write-Host ("  Line : {0}" -f $inv.ScriptLineNumber) -ForegroundColor Yellow
+        if ($inv.Line) {
+            Write-Host ("  Code : {0}" -f $inv.Line.Trim()) -ForegroundColor DarkCyan
+        }
+    }
+    if ($_.ScriptStackTrace) {
+        Write-Host "Stack Trace:" -ForegroundColor Yellow
+        Write-Host $_.ScriptStackTrace
+    }
+    break
+}
+
 function Get-ServerApplicationRoles {
     param(
         [Parameter(Mandatory)]
