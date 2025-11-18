@@ -130,7 +130,7 @@ if (-not $ServerApp -or [string]::IsNullOrWhiteSpace($ServerApp.Id)) {
 }
 
 
-$serverAppCurrent = Get-AzADApplication -ObjectId $ServerApp.Id -Select "AppRoles" -ErrorAction Stop
+$serverAppCurrent = Get-AzADApplication -ObjectId $ServerApp.Id -ErrorAction Stop
 
 if ($serverAppIsNew) {
     # Now Creating Identifier URLs
@@ -208,7 +208,7 @@ else {
     Write-Host "Server app already contains API scopes; skipping scope and pre-authorization configuration."
 }
 
-$serverAppCurrent = Get-AzADApplication -ObjectId $ServerApp.Id -Select "AppRoles" -ErrorAction Stop
+$serverAppCurrent = Get-AzADApplication -ObjectId $ServerApp.Id -ErrorAction Stop
 
 # Now add the Administrator Role
 
@@ -237,6 +237,10 @@ else {
 
     Write-Host "Created Administrator appRole with Id $adminGuid"
     $adminAppRoleId = $adminGuid
+}
+
+if (-not $adminAppRoleId) {
+    throw "Administrator app role Id could not be determined. Check the existing AppRoles on $ServerappName."
 }
 # --- Ensure a service principal (enterprise app) exists for the server app ---
 $ServerSp = Get-AzADServicePrincipal -Filter "appId eq '$($ServerApp.AppId)'"
@@ -359,10 +363,11 @@ $assignmentBody = @{
 } | ConvertTo-Json
 
 Write-Host "Assigning Administrator app role via Microsoft Graph..."
-#Write-Host "POST $assignUrl"
-#Write-Host "Request body:"
-#Write-Host $assignmentBody
-
+Write-Host "Using appRoleId $adminAppRoleId for server SP $($ServerSp.Id)"
+Write-Host "POST $assignUrl"
+Write-Host "Request body:"
+Write-Host $assignmentBody
+Write-Host ""
 function Write-GraphResponseDetails {
     param(
         [Parameter(Mandatory)]
