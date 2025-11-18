@@ -1,0 +1,133 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/0.1.2-preview/CreateUIDefinition.MultiVm.json#",
+  "handler": "Microsoft.Azure.CreateUIDef",
+  "version": "0.1.2-preview",
+  "parameters": {
+    "resourceTypes": [
+      "microsoft.resources/resourcegroups"
+    ],
+    "basics": [
+      {
+        "name": "businessEditionSolution",
+        "type": "Microsoft.Common.OptionsGroup",
+        "label": "Business Edition solution",
+        "toolTip": "Select which World of Workflows Business Edition solution to install.  Out-of-the-box includes workflows for a typical CRM application, which can be changed by the user.",
+        "defaultValue": "standard",
+        "constraints": {
+          "required": true,
+          "allowedValues": [
+            {
+              "label": "Business Edition - Standard installation",
+              "value": "standard"
+            },
+            {
+              "label": "Business Edition - Standard installation - additional server",
+              "value": "standardAdditionalServer"
+            }
+          ]
+        },
+        "visible": true
+      },
+      {
+        "name": "customerSetupInfo",
+        "type": "Microsoft.Common.InfoBox",
+        "label": "Customer setup",
+        "options": {
+          "icon": "Info",
+          "text": "Before deploying this Managed Application, your Global Administrator must run the CustomerSetup.ps1 script and then paste the JSON output into the box below. The script derives the siteName and all Entra ID application settings.",
+          "uri": "https://github.com/World-of-Workflows/Business-Edition/raw/main/Deployment/CustomerSetup.ps1",
+          "linkLabel": "View setup instructions and script"
+        }
+      },
+      
+       {
+        "name": "customerSetupJson",
+        "type": "Microsoft.Common.TextBox",
+        "label": "Customer setup JSON, output from CustomerSetup.ps1",
+        "defaultValue": "",
+        "toolTip": "Run CustomerSetup.ps1 (supplying -SiteName) and paste the JSON output here. The siteName inside this JSON will be used for the web app name and related resources.",
+        "placeholder": "Paste the JSON output from CustomerSetup.ps1 in here\n\n\n\n\n\n",
+        "multiLine": true,
+        "constraints": {
+          "required": true,
+          "validations": [
+            {  
+              "regex": "^(?=[\\s\\S]{50,8000}$)(?=[\\s\\S]*\"tenantId\"\\s*:)\\s*\\{[\\s\\S]*\\}\\s*$",
+              "message": "Paste a valid JSON object produced by CustomerSetup.ps1."
+            }
+          ]
+        },
+        "visible": true
+      },
+      {
+        "name": "managedIdentityName",
+        "type": "Microsoft.ManagedIdentity.IdentitySelector",
+        "label": "Managed Identity Configuration",
+        "toolTip": {
+          "systemAssignedIdentity": "Enable system assigned identity to grant the resource access to other existing resources.",
+          "userAssignedIdentity": "Add user assigned identities to grant the resource access to other existing resources."
+        },
+        "defaultValue": {
+          "systemAssignedIdentity": "Off"
+        },
+        "options": {
+          "hideSystemAssignedIdentity": true,
+          "hideUserAssignedIdentity": false
+        },
+        "visible": true
+      },
+      {
+        "name": "companyNameForWoWLicence",
+        "type": "Microsoft.Common.TextBox",
+        "label": "Company name for World of Workflows licence",
+        "toolTip": "Enter your organisation's legal or trading name. A 90-day trial licence will be issued to this company.",
+        "constraints": {
+          "required": true,
+          "regex": "^.{2,100}$",
+          "validationMessage": "Enter a valid company name (2–100 characters)."
+        }
+      },
+      {
+        "name": "licensingInfo",
+        "type": "Microsoft.Common.InfoBox",
+        "label": "Licensing information",
+        "options": {
+          "icon": "Info",
+          "text": "World of Workflows Business Edition is provided with a 90-day free licence. During the trial period we will contact your nominated billing contact to discuss ongoing licensing options.",
+          "uri": "https://worldofworkflows.com"
+        }
+      },
+      {
+        "name": "acceptTrialLicence",
+        "type": "Microsoft.Common.CheckBox",
+        "label": "90-day trial licence agreement",
+        "toolTip": "Confirm that you accept a 90-day free licence and agree to be contacted to discuss licensing during this period.",
+        "defaultValue": false,
+        "constraints": {
+          "required": true,
+          "validationMessage": "You must accept the 90-day trial licence terms to continue."
+        }
+      },
+      {
+        "name": "billingEmailForWoWLicence",
+        "type": "Microsoft.Common.TextBox",
+        "label": "Billing contact email",
+        "toolTip": "Enter the email address of the person responsible for licensing and billing. We will use this contact during the 90-day trial to discuss ongoing licensing.",
+        "constraints": {
+          "required": true,
+          "regex": "^(?=.{5,256}$)[^@\\s]+@[^@\\s]+\\.[^@\\s]+$",
+          "validationMessage": "Enter a valid email address (for example, user@contoso.com)."
+        }
+      }
+    ],
+    "steps": [],
+    "outputs": {
+      "managedIdentityName": "[basics('managedIdentityName')]",
+      "location": "[location()]",
+      "companyNameForWoWLicence": "[basics('companyNameForWoWLicence')]",
+      "billingEmailForWoWLicence": "[basics('billingEmailForWoWLicence')]",
+      "businessEditionSolution": "[basics('businessEditionSolution')]",
+      "customerSetupJson": "[basics('customerSetupJson')]"
+    }
+  }
+}

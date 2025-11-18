@@ -1,0 +1,947 @@
+{
+  "siteConfig": {
+    "numberOfWorkers": 1,
+    "linuxFxVersion": "DOTNETCORE|8.0",
+    "acrUseManagedIdentityCreds": false,
+    "alwaysOn": false,
+    "http20Enabled": false,
+    "functionAppScaleLimit": 0,
+    "minimumElasticInstanceCount": 0
+  },
+
+  "appSettings": [
+    { "name": "AllowedHosts", "value": "*" },
+    { "name": "AzureAd__CallbackPath", "value": "/signin.oidc" },
+
+    { "name": "AzureAd__ClientId", "source": "ServerClientId" },
+    { "name": "AzureAd__ClientSecret", "source": "ServerClientSecret" },
+    { "name": "AzureAd__Domain", "source": "TenantDomain" },
+
+    {
+      "name": "AzureAd__Instance",
+      "value": "https://login.microsoftonline.com"
+    },
+
+    {
+      "name": "AzureAd__OpenApi__AuthorizationCode__AuthorizationUrl",
+      "source": "TenantId",
+      "format": "https://login.microsoftonline.com/{0}/oauth2/v2.0/authorize"
+    },
+    {
+      "name": "AzureAd__OpenApi__AuthorizationCode__TokenUrl",
+      "source": "TenantId",
+      "format": "https://login.microsoftonline.com/{0}/oauth2/v2.0/token"
+    },
+
+    { "name": "AzureAd__OpenApi__ClientId", "source": "ServerClientId" },
+    {
+      "name": "AzureAd__OpenApi__Description",
+      "value": "Azure Active Directory using OAuth2.0"
+    },
+    {
+      "name": "AzureAd__OpenApi__Name",
+      "value": "Azure Active Directory"
+    },
+
+    {
+      "name": "AzureAd__OpenApi__Scopes__CountStats.Read.All__Description",
+      "value": "Read count statistical conuts"
+    },
+    {
+      "name": "AzureAd__OpenApi__Scopes__CountStats.Read.All__Value",
+      "source": "ServerClientId",
+      "format": "api://{0}/CountStats.Read.All"
+    },
+
+    {
+      "name": "AzureAd__OpenApi__Scopes__DataTypes.Read.All__Description",
+      "value": "Read data types"
+    },
+    {
+      "name": "AzureAd__OpenApi__Scopes__DataTypes.Read.All__Value",
+      "source": "ServerClientId",
+      "format": "api://{0}/DataTypes.Read.All"
+    },
+
+    {
+      "name": "AzureAd__OpenApi__Scopes__Identity.Read.Own__Description",
+      "value": "Read permissions"
+    },
+    {
+      "name": "AzureAd__OpenApi__Scopes__Identity.Read.Own__Value",
+      "source": "ServerClientId",
+      "format": "api://{0}/Identity.Read.Own"
+    },
+
+    {
+      "name": "AzureAd__OpenApi__Scopes__ObjectInstances.Delete.All__Description",
+      "value": "Delete object instances"
+    },
+    {
+      "name": "AzureAd__OpenApi__Scopes__ObjectInstances.Delete.All__Value",
+      "source": "ServerClientId",
+      "format": "api://{0}/ObjectInstances.Delete.All"
+    },
+
+    {
+      "name": "AzureAd__OpenApi__Scopes__ObjectInstances.InvokeWorkflow.All__Description",
+      "value": "Invoke object instance workflows"
+    },
+    {
+      "name": "AzureAd__OpenApi__Scopes__ObjectInstances.InvokeWorkflow.All__Value",
+      "source": "ServerClientId",
+      "format": "api://{0}/ObjectInstances.InvokeWorkflow.All"
+    },
+
+    {
+      "name": "AzureAd__OpenApi__Scopes__ObjectInstances.Read.All__Description",
+      "value": "Read object instances"
+    },
+    {
+      "name": "AzureAd__OpenApi__Scopes__ObjectInstances.Read.All__Value",
+      "source": "ServerClientId",
+      "format": "api://{0}/ObjectInstances.Read.All"
+    },
+
+    {
+      "name": "AzureAd__OpenApi__Scopes__ObjectInstances.Read.Basic__Description",
+      "value": "Read basic object instance info"
+    },
+    {
+      "name": "AzureAd__OpenApi__Scopes__ObjectInstances.Read.Basic__Value",
+      "source": "ServerClientId",
+      "format": "api://{0}/ObjectInstances.Read.Basic"
+    },
+
+    {
+      "name": "AzureAd__OpenApi__Scopes__ObjectInstances.Read.Current__Description",
+      "value": "Read current object instance data"
+    },
+    {
+      "name": "AzureAd__OpenApi__Scopes__ObjectInstances.Read.Current__Value",
+      "source": "ServerClientId",
+      "format": "api://{0}/ObjectInstances.Read.Current"
+    },
+
+    {
+      "name": "AzureAd__OpenApi__Scopes__ObjectInstances.Read.History__Description",
+      "value": "Read object instance history"
+    },
+    {
+      "name": "AzureAd__OpenApi__Scopes__ObjectInstances.Read.History__Value",
+      "source": "ServerClientId",
+      "format": "api://{0}/ObjectInstances.Read.History"
+    },
+
+    {
+      "name": "AzureAd__OpenApi__Scopes__ObjectInstances.ReadWrite.All__Description",
+      "value": "Read and write object instances"
+    },
+    {
+      "name": "AzureAd__OpenApi__Scopes__ObjectInstances.ReadWrite.All__Value",
+      "source": "ServerClientId",
+      "format": "api://{0}/ObjectInstances.ReadWrite.All"
+    },
+
+    {
+      "name": "AzureAd__OpenApi__Scopes__ObjectInstances.Write.All__Description",
+      "value": "Create and update object instances"
+    },
+    {
+      "name": "AzureAd__OpenApi__Scopes__ObjectInstances.Write.All__Value",
+      "source": "ServerClientId",
+      "format": "api://{0}/ObjectInstances.Write.All"
+    },
+
+    {
+      "name": "AzureAd__OpenApi__Scopes__ObjectTypes.Delete.All__Description",
+      "value": "Delete object types"
+    },
+    {
+      "name": "AzureAd__OpenApi__Scopes__ObjectTypes.Delete.All__Value",
+      "source": "ServerClientId",
+      "format": "api://{0}/ObjectTypes.Delete.All"
+    },
+
+    {
+      "name": "AzureAd__OpenApi__Scopes__ObjectTypes.Read.All__Description",
+      "value": "Read object type definitions"
+    },
+    {
+      "name": "AzureAd__OpenApi__Scopes__ObjectTypes.Read.All__Value",
+      "source": "ServerClientId",
+      "format": "api://{0}/ObjectTypes.Read.All"
+    },
+
+    {
+      "name": "AzureAd__OpenApi__Scopes__ObjectTypes.ReadWrite.All__Description",
+      "value": "Read and write object type definitions"
+    },
+    {
+      "name": "AzureAd__OpenApi__Scopes__ObjectTypes.ReadWrite.All__Value",
+      "source": "ServerClientId",
+      "format": "api://{0}/ObjectTypes.ReadWrite.All"
+    },
+
+    {
+      "name": "AzureAd__OpenApi__Scopes__ObjectTypes.Write.All__Description",
+      "value": "Write object instances"
+    },
+    {
+      "name": "AzureAd__OpenApi__Scopes__ObjectTypes.Write.All__Value",
+      "source": "ServerClientId",
+      "format": "api://{0}/ObjectTypes.Write.All"
+    },
+
+    {
+      "name": "AzureAd__OpenApi__Scopes__Plugins.Add__Description",
+      "value": "Add plugins"
+    },
+    {
+      "name": "AzureAd__OpenApi__Scopes__Plugins.Add__Value",
+      "source": "ServerClientId",
+      "format": "api://{0}/Plugins.Add"
+    },
+
+    {
+      "name": "AzureAd__OpenApi__Scopes__Plugins.Read.All__Description",
+      "value": "Read plugins"
+    },
+    {
+      "name": "AzureAd__OpenApi__Scopes__Plugins.Read.All__Value",
+      "source": "ServerClientId",
+      "format": "api://{0}/Plugins.Read.All"
+    },
+
+    {
+      "name": "AzureAd__OpenApi__Scopes__Server.Backup__Description",
+      "value": "Initiate database backup"
+    },
+    {
+      "name": "AzureAd__OpenApi__Scopes__Server.Backup__Value",
+      "source": "ServerClientId",
+      "format": "api://{0}/Server.Backup"
+    },
+
+    {
+      "name": "AzureAd__OpenApi__Scopes__Server.FixElsa__Description",
+      "value": "Repair Elsa HTTP endpoints"
+    },
+    {
+      "name": "AzureAd__OpenApi__Scopes__Server.FixElsa__Value",
+      "source": "ServerClientId",
+      "format": "api://{0}/Server.FixElsa"
+    },
+
+    {
+      "name": "AzureAd__OpenApi__Scopes__Server.Restart__Description",
+      "value": "Restart the server"
+    },
+    {
+      "name": "AzureAd__OpenApi__Scopes__Server.Restart__Value",
+      "source": "ServerClientId",
+      "format": "api://{0}/Server.Restart"
+    },
+
+    {
+      "name": "AzureAd__OpenApi__Scopes__Tasks.Assign.All__Description",
+      "value": "Assign tasks to any user"
+    },
+    {
+      "name": "AzureAd__OpenApi__Scopes__Tasks.Assign.All__Value",
+      "source": "ServerClientId",
+      "format": "api://{0}/Tasks.Assign.All"
+    },
+
+    {
+      "name": "AzureAd__OpenApi__Scopes__Tasks.Assign.AssignedTo__Description",
+      "value": "Reassign tasks to any user"
+    },
+    {
+      "name": "AzureAd__OpenApi__Scopes__Tasks.Assign.AssignedTo__Value",
+      "source": "ServerClientId",
+      "format": "api://{0}/Tasks.Assign.AssignedTo"
+    },
+
+    {
+      "name": "AzureAd__OpenApi__Scopes__Tasks.Assign.Available__Description",
+      "value": "Assign available tasks to any user"
+    },
+    {
+      "name": "AzureAd__OpenApi__Scopes__Tasks.Assign.Available__Value",
+      "source": "ServerClientId",
+      "format": "api://{0}/Tasks.Assign.Available"
+    },
+
+    {
+      "name": "AzureAd__OpenApi__Scopes__Tasks.AssignToSelf.All__Description",
+      "value": "Pick any tasks"
+    },
+    {
+      "name": "AzureAd__OpenApi__Scopes__Tasks.AssignToSelf.All__Value",
+      "source": "ServerClientId",
+      "format": "api://{0}/Tasks.AssignToSelf.All"
+    },
+
+    {
+      "name": "AzureAd__OpenApi__Scopes__Tasks.AssignToSelf.Available__Description",
+      "value": "Pick available tasks"
+    },
+    {
+      "name": "AzureAd__OpenApi__Scopes__Tasks.AssignToSelf.Available__Value",
+      "source": "ServerClientId",
+      "format": "api://{0}/Tasks.AssignToSelf.Available"
+    },
+
+    {
+      "name": "AzureAd__OpenApi__Scopes__Tasks.Close.All__Description",
+      "value": "Close all tasks"
+    },
+    {
+      "name": "AzureAd__OpenApi__Scopes__Tasks.Close.All__Value",
+      "source": "ServerClientId",
+      "format": "api://{0}/Tasks.Close.All"
+    },
+
+    {
+      "name": "AzureAd__OpenApi__Scopes__Tasks.Close.AssignedTo__Description",
+      "value": "Close assigned tasks"
+    },
+    {
+      "name": "AzureAd__OpenApi__Scopes__Tasks.Close.AssignedTo__Value",
+      "source": "ServerClientId",
+      "format": "api://{0}/Tasks.Close.AssignedTo"
+    },
+
+    {
+      "name": "AzureAd__OpenApi__Scopes__Tasks.Read.All__Description",
+      "value": "Read all tasks"
+    },
+    {
+      "name": "AzureAd__OpenApi__Scopes__Tasks.Read.All__Value",
+      "source": "ServerClientId",
+      "format": "api://{0}/Tasks.Read.All"
+    },
+
+    {
+      "name": "AzureAd__OpenApi__Scopes__Tasks.Read.Assigned__Description",
+      "value": "Read assigned tasks"
+    },
+    {
+      "name": "AzureAd__OpenApi__Scopes__Tasks.Read.Assigned__Value",
+      "source": "ServerClientId",
+      "format": "api://{0}/Tasks.Read.Assigned"
+    },
+
+    {
+      "name": "AzureAd__OpenApi__Scopes__Tasks.Read.AssignedTo__Description",
+      "value": "Read assigned tasks"
+    },
+    {
+      "name": "AzureAd__OpenApi__Scopes__Tasks.Read.AssignedTo__Value",
+      "source": "ServerClientId",
+      "format": "api://{0}/Tasks.Read.AssignedTo"
+    },
+
+    {
+      "name": "AzureAd__OpenApi__Scopes__Tasks.Read.Available__Description",
+      "value": "Read available tasks"
+    },
+    {
+      "name": "AzureAd__OpenApi__Scopes__Tasks.Read.Available__Value",
+      "source": "ServerClientId",
+      "format": "api://{0}/Tasks.Read.Available"
+    },
+
+    {
+      "name": "AzureAd__OpenApi__Scopes__Tasks.ReadWrite.All__Description",
+      "value": "Read and write tasks"
+    },
+    {
+      "name": "AzureAd__OpenApi__Scopes__Tasks.ReadWrite.All__Value",
+      "source": "ServerClientId",
+      "format": "api://{0}/Tasks.ReadWrite.All"
+    },
+
+    {
+      "name": "AzureAd__OpenApi__Scopes__Tasks.Unassign.AssignedTo__Description",
+      "value": "Deallocate assigned task"
+    },
+    {
+      "name": "AzureAd__OpenApi__Scopes__Tasks.Unassign.AssignedTo__Value",
+      "source": "ServerClientId",
+      "format": "api://{0}/Tasks.Unassign.AssignedTo"
+    },
+
+    {
+      "name": "AzureAd__OpenApi__Scopes__Tasks.Write.All__Description",
+      "value": "Write tasks"
+    },
+    {
+      "name": "AzureAd__OpenApi__Scopes__Tasks.Write.All__Value",
+      "source": "ServerClientId",
+      "format": "api://{0}/Tasks.Write.All"
+    },
+
+    {
+      "name": "AzureAd__OpenApi__Scopes__ViewDefinitions.Read.All__Description",
+      "value": "Read view definitions"
+    },
+    {
+      "name": "AzureAd__OpenApi__Scopes__ViewDefinitions.Read.All__Value",
+      "source": "ServerClientId",
+      "format": "api://{0}/ViewDefinitions.Read.All"
+    },
+
+    {
+      "name": "AzureAd__OpenApi__Scopes__ViewDefinitions.ReadWrite.All__Description",
+      "value": "Read and write view defintions"
+    },
+    {
+      "name": "AzureAd__OpenApi__Scopes__ViewDefinitions.ReadWrite.All__Value",
+      "source": "ServerClientId",
+      "format": "api://{0}/ViewDefinitions.ReadWrite.All"
+    },
+
+    {
+      "name": "AzureAd__OpenApi__Scopes__ViewDefinitions.Write.All__Description",
+      "value": "Write view definitions"
+    },
+    {
+      "name": "AzureAd__OpenApi__Scopes__ViewDefinitions.Write.All__Value",
+      "source": "ServerClientId",
+      "format": "api://{0}/ViewDefinitions.Write.All"
+    },
+
+    {
+      "name": "AzureAd__OpenApi__Scopes__Views.Read.All__Description",
+      "value": "Read view data"
+    },
+    {
+      "name": "AzureAd__OpenApi__Scopes__Views.Read.All__Value",
+      "source": "ServerClientId",
+      "format": "api://{0}/Views.Read.All"
+    },
+
+    {
+      "name": "AzureAd__OpenApi__Scopes__Workflow.Invoke.All__Description",
+      "value": "Invoke workflows"
+    },
+    {
+      "name": "AzureAd__OpenApi__Scopes__Workflow.Invoke.All__Value",
+      "source": "ServerClientId",
+      "format": "api://{0}/Workflow.Invoke.All"
+    },
+
+    {
+      "name": "AzureAd__OpenApi__Scopes__WorkflowActivityDefinition.Read.All__Description",
+      "value": "Read workflow activity definitions"
+    },
+    {
+      "name": "AzureAd__OpenApi__Scopes__WorkflowActivityDefinition.Read.All__Value",
+      "source": "ServerClientId",
+      "format": "api://{0}/WorkflowActivityDefinition.Read.All"
+    },
+
+    {
+      "name": "AzureAd__OpenApi__Scopes__WorkflowActivityStatistics.Read.All__Description",
+      "value": "Read workflow activity statistics"
+    },
+    {
+      "name": "AzureAd__OpenApi__Scopes__WorkflowActivityStatistics.Read.All__Value",
+      "source": "ServerClientId",
+      "format": "api://{0}/WorkflowActivityStatistics.Read.All"
+    },
+
+    {
+      "name": "AzureAd__OpenApi__Scopes__WorkflowConductor.Invoke.All__Description",
+      "value": "Invoke workflow conductors"
+    },
+    {
+      "name": "AzureAd__OpenApi__Scopes__WorkflowConductor.Invoke.All__Value",
+      "source": "ServerClientId",
+      "format": "api://{0}/WorkflowConductor.Invoke.All"
+    },
+
+    {
+      "name": "AzureAd__OpenApi__Scopes__WorkflowConductor.Invoke.Events__Description",
+      "value": "Invoke workflow conductor events"
+    },
+    {
+      "name": "AzureAd__OpenApi__Scopes__WorkflowConductor.Invoke.Events__Value",
+      "source": "ServerClientId",
+      "format": "api://{0}/WorkflowConductor.Invoke.Events"
+    },
+
+    {
+      "name": "AzureAd__OpenApi__Scopes__WorkflowConductor.Invoke.Tasks__Description",
+      "value": "Invoke workflow conductor tasks"
+    },
+    {
+      "name": "AzureAd__OpenApi__Scopes__WorkflowConductor.Invoke.Tasks__Value",
+      "source": "ServerClientId",
+      "format": "api://{0}/WorkflowConductor.Invoke.Tasks"
+    },
+
+    {
+      "name": "AzureAd__OpenApi__Scopes__WorkflowDefinition.Delete.All__Description",
+      "value": "Delete workflow definitions"
+    },
+    {
+      "name": "AzureAd__OpenApi__Scopes__WorkflowDefinition.Delete.All__Value",
+      "source": "ServerClientId",
+      "format": "api://{0}/WorkflowDefinition.Delete.All"
+    },
+
+    {
+      "name": "AzureAd__OpenApi__Scopes__WorkflowDefinition.Publish.All__Description",
+      "value": "Publish workflow definitions"
+    },
+    {
+      "name": "AzureAd__OpenApi__Scopes__WorkflowDefinition.Publish.All__Value",
+      "source": "ServerClientId",
+      "format": "api://{0}/WorkflowDefinition.Publish.All"
+    },
+
+    {
+      "name": "AzureAd__OpenApi__Scopes__WorkflowDefinition.Read.All__Description",
+      "value": "Read workflow definitions"
+    },
+    {
+      "name": "AzureAd__OpenApi__Scopes__WorkflowDefinition.Read.All__Value",
+      "source": "ServerClientId",
+      "format": "api://{0}/WorkflowDefinition.Read.All"
+    },
+
+    {
+      "name": "AzureAd__OpenApi__Scopes__WorkflowDefinition.ReadWrite.All__Description",
+      "value": "Read and write workflow definitions"
+    },
+    {
+      "name": "AzureAd__OpenApi__Scopes__WorkflowDefinition.ReadWrite.All__Value",
+      "source": "ServerClientId",
+      "format": "api://{0}/WorkflowDefinition.ReadWrite.All"
+    },
+
+    {
+      "name": "AzureAd__OpenApi__Scopes__WorkflowDefinition.Test.All__Description",
+      "value": "Test workflow definitions"
+    },
+    {
+      "name": "AzureAd__OpenApi__Scopes__WorkflowDefinition.Test.All__Value",
+      "source": "ServerClientId",
+      "format": "api://{0}/WorkflowDefinition.Test.All"
+    },
+
+    {
+      "name": "AzureAd__OpenApi__Scopes__WorkflowDefinition.Write.All__Description",
+      "value": "Write workflow definitions"
+    },
+    {
+      "name": "AzureAd__OpenApi__Scopes__WorkflowDefinition.Write.All__Value",
+      "source": "ServerClientId",
+      "format": "api://{0}/WorkflowDefinition.Write.All"
+    },
+
+    {
+      "name": "AzureAd__OpenApi__Scopes__WorkflowDesigner.Read.All__Description",
+      "value": "Use workflow designer"
+    },
+    {
+      "name": "AzureAd__OpenApi__Scopes__WorkflowDesigner.Read.All__Value",
+      "source": "ServerClientId",
+      "format": "api://{0}/WorkflowDesigner.Read.All"
+    },
+
+    {
+      "name": "AzureAd__OpenApi__Scopes__WorkflowInstance.Cancel.All__Description",
+      "value": "Cancel workflow instances"
+    },
+    {
+      "name": "AzureAd__OpenApi__Scopes__WorkflowInstance.Cancel.All__Value",
+      "source": "ServerClientId",
+      "format": "api://{0}/WorkflowInstance.Cancel.All"
+    },
+
+    {
+      "name": "AzureAd__OpenApi__Scopes__WorkflowInstance.Delete.All__Description",
+      "value": "Delete workflow instances"
+    },
+    {
+      "name": "AzureAd__OpenApi__Scopes__WorkflowInstance.Delete.All__Value",
+      "source": "ServerClientId",
+      "format": "api://{0}/WorkflowInstance.Delete.All"
+    },
+
+    {
+      "name": "AzureAd__OpenApi__Scopes__WorkflowInstance.Read.All__Description",
+      "value": "Read workflow instances"
+    },
+    {
+      "name": "AzureAd__OpenApi__Scopes__WorkflowInstance.Read.All__Value",
+      "source": "ServerClientId",
+      "format": "api://{0}/WorkflowInstance.Read.All"
+    },
+
+    {
+      "name": "AzureAd__OpenApi__Scopes__WorkflowInstance.Retry.All__Description",
+      "value": "Retry workflow instances"
+    },
+    {
+      "name": "AzureAd__OpenApi__Scopes__WorkflowInstance.Retry.All__Value",
+      "source": "ServerClientId",
+      "format": "api://{0}/WorkflowInstance.Retry.All"
+    },
+
+    {
+      "name": "AzureAd__OpenApi__Scopes__WorkflowInstanceExecutionLog.Read.All__Description",
+      "value": "Read workflow instance execution logs"
+    },
+    {
+      "name": "AzureAd__OpenApi__Scopes__WorkflowInstanceExecutionLog.Read.All__Value",
+      "source": "ServerClientId",
+      "format": "api://{0}/WorkflowInstanceExecutionLog.Read.All"
+    },
+
+    {
+      "name": "AzureAd__OpenApi__Scopes__WorkflowSecrets.ReadWrite.All__Description",
+      "value": "Read and write workflow secrets"
+    },
+    {
+      "name": "AzureAd__OpenApi__Scopes__WorkflowSecrets.ReadWrite.All__Value",
+      "source": "ServerClientId",
+      "format": "api://{0}/WorkflowSecrets.ReadWrite.All"
+    },
+
+    {
+      "name": "AzureAd__OpenApi__Scopes__WorkflowSignal.InvokeByName.All__Description",
+      "value": "Invoke workflow signals by name"
+    },
+    {
+      "name": "AzureAd__OpenApi__Scopes__WorkflowSignal.InvokeByName.All__Value",
+      "source": "ServerClientId",
+      "format": "api://{0}/WorkflowSignal.InvokeByName.All"
+    },
+
+    { "name": "AzureAd__Roles__Objects__Instances__Delete__0", "value": "Administrator" },
+    { "name": "AzureAd__Roles__Objects__Instances__InvokeWorkflow__0", "value": "Administrator" },
+    { "name": "AzureAd__Roles__Objects__Instances__Read__Current__0", "value": "Administrator" },
+    { "name": "AzureAd__Roles__Objects__Instances__Read__Desired__0", "value": "Administrator" },
+    { "name": "AzureAd__Roles__Objects__Instances__Read__History__0", "value": "Administrator" },
+    { "name": "AzureAd__Roles__Objects__Instances__Write__0", "value": "Administrator" },
+    { "name": "AzureAd__Roles__Objects__Types__Columns__Delete__0", "value": "Administrator" },
+    { "name": "AzureAd__Roles__Objects__Types__Columns__Write__0", "value": "Administrator" },
+    { "name": "AzureAd__Roles__Objects__Types__Delete__0", "value": "Administrator" },
+    { "name": "AzureAd__Roles__Objects__Types__Write__0", "value": "Administrator" },
+    { "name": "AzureAd__Roles__Plugins__Add__0", "value": "Administrator" },
+    { "name": "AzureAd__Roles__Plugins__Read__0", "value": "Administrator" },
+    { "name": "AzureAd__Roles__Server__Backup__0", "value": "Administrator" },
+    { "name": "AzureAd__Roles__Server__FixElsa__0", "value": "Administrator" },
+    { "name": "AzureAd__Roles__Server__Restart__0", "value": "Administrator" },
+    { "name": "AzureAd__Roles__Stats__ReadAllCounts__0", "value": "Administrator" },
+    { "name": "AzureAd__Roles__Tasks__Assign__All__0", "value": "Administrator" },
+    { "name": "AzureAd__Roles__Tasks__Assign__AssignedTo__0", "value": "Administrator" },
+    { "name": "AzureAd__Roles__Tasks__Assign__Available__0", "value": "Administrator" },
+    { "name": "AzureAd__Roles__Tasks__AssignToSelf__All__0", "value": "Administrator" },
+    { "name": "AzureAd__Roles__Tasks__Close__All__0", "value": "Administrator" },
+    { "name": "AzureAd__Roles__Tasks__Count__0", "value": "Administrator" },
+    { "name": "AzureAd__Roles__Tasks__Read__All__0", "value": "Administrator" },
+    { "name": "AzureAd__Roles__Users__Count__0", "value": "Administrator" },
+    { "name": "AzureAd__Roles__Views__Definitions__Write__0", "value": "Administrator" },
+    { "name": "AzureAd__Roles__Workflows__Activity__Definition__Read__0", "value": "Administrator" },
+    { "name": "AzureAd__Roles__Workflows__Activity__Statistics__Read__0", "value": "Administrator" },
+    { "name": "AzureAd__Roles__Workflows__Definitions__Delete__0", "value": "Administrator" },
+    { "name": "AzureAd__Roles__Workflows__Definitions__Publish__0", "value": "Administrator" },
+    { "name": "AzureAd__Roles__Workflows__Definitions__Read__0", "value": "Administrator" },
+    { "name": "AzureAd__Roles__Workflows__Definitions__Test__0", "value": "Administrator" },
+    { "name": "AzureAd__Roles__Workflows__Definitions__Write__0", "value": "Administrator" },
+    { "name": "AzureAd__Roles__Workflows__Instance__ExecutionLog__Read__0", "value": "Administrator" },
+    { "name": "AzureAd__Roles__Workflows__Instance__Instance__Cancel__0", "value": "Administrator" },
+    { "name": "AzureAd__Roles__Workflows__Instance__Instance__Delete__0", "value": "Administrator" },
+    { "name": "AzureAd__Roles__Workflows__Instance__Instance__Read__0", "value": "Administrator" },
+    { "name": "AzureAd__Roles__Workflows__Instance__Instance__Retry__0", "value": "Administrator" },
+    { "name": "AzureAd__Roles__Workflows__Invoke__0", "value": "Administrator" },
+    { "name": "AzureAd__Roles__Workflows__Secrets__Manage__0", "value": "Administrator" },
+    { "name": "AzureAd__Roles__Workflows__Signal__InvokeByName__0", "value": "Administrator" },
+
+    { "name": "AzureAd__Scopes__DataTypes__Read", "value": "DataTypes.Read.All" },
+    { "name": "AzureAd__Scopes__Identity__Read", "value": "Identity.Read.Own" },
+    { "name": "AzureAd__Scopes__Objects__Instances__Delete", "value": "ObjectInstances.Delete.All" },
+    { "name": "AzureAd__Scopes__Objects__Instances__InvokeWorkflow", "value": "ObjectInstances.InvokeWorkflow.All" },
+    { "name": "AzureAd__Scopes__Objects__Instances__Read__Basic__0", "value": "ObjectInstances.ReadWrite.All" },
+    { "name": "AzureAd__Scopes__Objects__Instances__Read__Basic__1", "value": "ObjectInstances.Read.All" },
+    { "name": "AzureAd__Scopes__Objects__Instances__Read__Basic__2", "value": "ObjectInstances.Read.Basic" },
+    { "name": "AzureAd__Scopes__Objects__Instances__Read__Basic__3", "value": "ObjectInstances.Read.Current" },
+    { "name": "AzureAd__Scopes__Objects__Instances__Read__Current__0", "value": "ObjectInstances.ReadWrite.All" },
+    { "name": "AzureAd__Scopes__Objects__Instances__Read__Current__1", "value": "ObjectInstances.Read.All" },
+    { "name": "AzureAd__Scopes__Objects__Instances__Read__Current__2", "value": "ObjectInstances.Read.Current" },
+    { "name": "AzureAd__Scopes__Objects__Instances__Read__Desired__0", "value": "ObjectInstances.ReadWrite.All" },
+    { "name": "AzureAd__Scopes__Objects__Instances__Read__Desired__1", "value": "ObjectInstances.Read.All" },
+    { "name": "AzureAd__Scopes__Objects__Instances__Read__History__0", "value": "ObjectInstances.ReadWrite.All" },
+    { "name": "AzureAd__Scopes__Objects__Instances__Read__History__1", "value": "ObjectInstances.Read.All" },
+    { "name": "AzureAd__Scopes__Objects__Instances__Read__History__2", "value": "ObjectInstances.Read.History" },
+    { "name": "AzureAd__Scopes__Objects__Instances__Write__0", "value": "ObjectInstances.ReadWrite.All" },
+    { "name": "AzureAd__Scopes__Objects__Instances__Write__1", "value": "ObjectInstances.Write.All" },
+
+    { "name": "AzureAd__Scopes__Objects__Types__Columns__Delete__0", "value": "ObjectTypes.ReadWrite.All" },
+    { "name": "AzureAd__Scopes__Objects__Types__Columns__Delete__1", "value": "ObjectTypes.Write.All" },
+    { "name": "AzureAd__Scopes__Objects__Types__Columns__Read__0", "value": "ObjectTypes.ReadWrite.All" },
+    { "name": "AzureAd__Scopes__Objects__Types__Columns__Read__1", "value": "ObjectTypes.Read.All" },
+    { "name": "AzureAd__Scopes__Objects__Types__Columns__Write__0", "value": "ObjectTypes.ReadWrite.All" },
+    { "name": "AzureAd__Scopes__Objects__Types__Columns__Write__1", "value": "ObjectTypes.Write.All" },
+
+    { "name": "AzureAd__Scopes__Objects__Types__Count__0", "value": "CountStats.Read.All" },
+    { "name": "AzureAd__Scopes__Objects__Types__Count__1", "value": "ObjectTypes.ReadWrite.All" },
+    { "name": "AzureAd__Scopes__Objects__Types__Count__2", "value": "ObjectTypes.Read.All" },
+
+    { "name": "AzureAd__Scopes__Objects__Types__Delete", "value": "ObjectTypes.Delete.All" },
+    { "name": "AzureAd__Scopes__Objects__Types__Read__0", "value": "ObjectTypes.ReadWrite.All" },
+    { "name": "AzureAd__Scopes__Objects__Types__Read__1", "value": "ObjectTypes.Read.All" },
+    { "name": "AzureAd__Scopes__Objects__Types__Write__0", "value": "ObjectTypes.ReadWrite.All" },
+    { "name": "AzureAd__Scopes__Objects__Types__Write__1", "value": "ObjectTypes.Write.All" },
+
+    { "name": "AzureAd__Scopes__Plugins__Add", "value": "Plugins.Add" },
+    { "name": "AzureAd__Scopes__Plugins__Read", "value": "Plugins.Read.All" },
+
+    { "name": "AzureAd__Scopes__Server__Backup", "value": "Server.Backup" },
+    { "name": "AzureAd__Scopes__Server__FixElsa", "value": "Server.FixElsa" },
+    { "name": "AzureAd__Scopes__Server__Restart", "value": "Server.Restart" },
+
+    { "name": "AzureAd__Scopes__Stats__ReadAllCounts", "value": "CountStats.Read.All" },
+
+    { "name": "AzureAd__Scopes__Tasks__Assign__All__0", "value": "Tasks.ReadWrite.All" },
+    { "name": "AzureAd__Scopes__Tasks__Assign__All__1", "value": "Tasks.Write.All" },
+    { "name": "AzureAd__Scopes__Tasks__Assign__All__2", "value": "Tasks.Assign.All" },
+
+    { "name": "AzureAd__Scopes__Tasks__Assign__AssignedTo__0", "value": "Tasks.ReadWrite.All" },
+    { "name": "AzureAd__Scopes__Tasks__Assign__AssignedTo__1", "value": "Tasks.Write.All" },
+    { "name": "AzureAd__Scopes__Tasks__Assign__AssignedTo__2", "value": "Tasks.Assign.All" },
+    { "name": "AzureAd__Scopes__Tasks__Assign__AssignedTo__3", "value": "Tasks.Assign.AssignedTo" },
+
+    { "name": "AzureAd__Scopes__Tasks__Assign__Available__0", "value": "Tasks.ReadWrite.All" },
+    { "name": "AzureAd__Scopes__Tasks__Assign__Available__1", "value": "Tasks.Write.All" },
+    { "name": "AzureAd__Scopes__Tasks__Assign__Available__2", "value": "Tasks.Assign.All" },
+    { "name": "AzureAd__Scopes__Tasks__Assign__Available__3", "value": "Tasks.Assign.Available" },
+
+    { "name": "AzureAd__Scopes__Tasks__AssignToSelf__All__0", "value": "Tasks.ReadWrite.All" },
+    { "name": "AzureAd__Scopes__Tasks__AssignToSelf__All__1", "value": "Tasks.Write.All" },
+    { "name": "AzureAd__Scopes__Tasks__AssignToSelf__All__2", "value": "Tasks.Assign.All" },
+    { "name": "AzureAd__Scopes__Tasks__AssignToSelf__All__3", "value": "Tasks.AssignToSelf.All" },
+
+    { "name": "AzureAd__Scopes__Tasks__AssignToSelf__Available__0", "value": "Tasks.ReadWrite.All" },
+    { "name": "AzureAd__Scopes__Tasks__AssignToSelf__Available__1", "value": "Tasks.Write.All" },
+    { "name": "AzureAd__Scopes__Tasks__AssignToSelf__Available__2", "value": "Tasks.Assign.All" },
+    { "name": "AzureAd__Scopes__Tasks__AssignToSelf__Available__3", "value": "Tasks.Assign.Available" },
+    { "name": "AzureAd__Scopes__Tasks__AssignToSelf__Available__4", "value": "Tasks.AssignToSelf.All" },
+    { "name": "AzureAd__Scopes__Tasks__AssignToSelf__Available__5", "value": "Tasks.AssignToSelf.Available" },
+
+    { "name": "AzureAd__Scopes__Tasks__Close__All__0", "value": "Tasks.ReadWrite.All" },
+    { "name": "AzureAd__Scopes__Tasks__Close__All__1", "value": "Tasks.Write.All" },
+    { "name": "AzureAd__Scopes__Tasks__Close__All__2", "value": "Tasks.Close.All" },
+
+    { "name": "AzureAd__Scopes__Tasks__Close__AssignedTo__0", "value": "Tasks.ReadWrite.All" },
+    { "name": "AzureAd__Scopes__Tasks__Close__AssignedTo__1", "value": "Tasks.Write.All" },
+    { "name": "AzureAd__Scopes__Tasks__Close__AssignedTo__2", "value": "Tasks.Close.All" },
+    { "name": "AzureAd__Scopes__Tasks__Close__AssignedTo__3", "value": "Tasks.Close.AssignedTo" },
+
+    { "name": "AzureAd__Scopes__Tasks__Count__0", "value": "CountStats.Read.All" },
+    { "name": "AzureAd__Scopes__Tasks__Count__1", "value": "Tasks.ReadWrite.All" },
+    { "name": "AzureAd__Scopes__Tasks__Count__2", "value": "Tasks.Read.All" },
+
+    { "name": "AzureAd__Scopes__Tasks__Read__All__0", "value": "Tasks.ReadWrite.All" },
+    { "name": "AzureAd__Scopes__Tasks__Read__All__1", "value": "Tasks.Read.All" },
+
+    { "name": "AzureAd__Scopes__Tasks__Read__AssignedTo__0", "value": "Tasks.ReadWrite.All" },
+    { "name": "AzureAd__Scopes__Tasks__Read__AssignedTo__1", "value": "Tasks.Read.All" },
+    { "name": "AzureAd__Scopes__Tasks__Read__AssignedTo__2", "value": "Tasks.Read.AssignedTo" },
+
+    { "name": "AzureAd__Scopes__Tasks__Read__Available__0", "value": "Tasks.ReadWrite.All" },
+    { "name": "AzureAd__Scopes__Tasks__Read__Available__1", "value": "Tasks.Read.All" },
+    { "name": "AzureAd__Scopes__Tasks__Read__Available__2", "value": "Tasks.Read.Available" },
+
+    { "name": "AzureAd__Scopes__Tasks__Unassign__AssignedTo__0", "value": "Tasks.ReadWrite.All" },
+    { "name": "AzureAd__Scopes__Tasks__Unassign__AssignedTo__1", "value": "Tasks.Write.All" },
+    { "name": "AzureAd__Scopes__Tasks__Unassign__AssignedTo__2", "value": "Tasks.Assign.All" },
+    { "name": "AzureAd__Scopes__Tasks__Unassign__AssignedTo__3", "value": "Tasks.Unassign.AssignedTo" },
+
+    { "name": "AzureAd__Scopes__Tasks__Write__All__0", "value": "Tasks.ReadWrite.All" },
+    { "name": "AzureAd__Scopes__Tasks__Write__All__1", "value": "Tasks.Write.All" },
+
+    { "name": "AzureAd__Scopes__Users__Count", "value": "CountStats.Read.All" },
+
+    { "name": "AzureAd__Scopes__Views__Data__Read", "value": "Views.Read.All" },
+    { "name": "AzureAd__Scopes__Views__Definitions__Count__0", "value": "CountStats.Read.All" },
+    { "name": "AzureAd__Scopes__Views__Definitions__Count__1", "value": "ViewDefinitions.ReadWrite.All" },
+    { "name": "AzureAd__Scopes__Views__Definitions__Count__2", "value": "ViewDefinitions.Read.All" },
+
+    { "name": "AzureAd__Scopes__Views__Definitions__Read__0", "value": "ViewDefinitions.ReadWrite.All" },
+    { "name": "AzureAd__Scopes__Views__Definitions__Read__1", "value": "ViewDefinitions.Read.All" },
+
+    { "name": "AzureAd__Scopes__Views__Definitions__Write__0", "value": "ViewDefinitions.ReadWrite.All" },
+    { "name": "AzureAd__Scopes__Views__Definitions__Write__1", "value": "ViewDefinitions.Write.All" },
+
+    { "name": "AzureAd__Scopes__Workflows__Activity__Definition__Read__0", "value": "WorkflowDesigner.Read.All" },
+    { "name": "AzureAd__Scopes__Workflows__Activity__Definition__Read__1", "value": "WorkflowActivityDefinition.Read.All" },
+
+    { "name": "AzureAd__Scopes__Workflows__Activity__Statistics__Read__0", "value": "WorkflowActivityStatistics.Read.All" },
+
+    { "name": "AzureAd__Scopes__Workflows__Conductor__Event__Invoke__0", "value": "Workflow.Invoke.All" },
+    { "name": "AzureAd__Scopes__Workflows__Conductor__Event__Invoke__1", "value": "WorkflowConductor.Invoke.All" },
+    { "name": "AzureAd__Scopes__Workflows__Conductor__Event__Invoke__2", "value": "WorkflowConductor.Invoke.Events" },
+
+    { "name": "AzureAd__Scopes__Workflows__Conductor__Task__Invoke__0", "value": "Workflow.Invoke.All" },
+    { "name": "AzureAd__Scopes__Workflows__Conductor__Task__Invoke__1", "value": "WorkflowConductor.Invoke.All" },
+    { "name": "AzureAd__Scopes__Workflows__Conductor__Task__Invoke__2", "value": "WorkflowConductor.Invoke.Tasks" },
+
+    { "name": "AzureAd__Scopes__Workflows__Definitions__Delete__0", "value": "WorkflowDefinition.Delete.All" },
+
+    { "name": "AzureAd__Scopes__Workflows__Definitions__Publish__0", "value": "WorkflowDefinition.Publish.All" },
+
+    { "name": "AzureAd__Scopes__Workflows__Definitions__Read__0", "value": "WorkflowDefinition.ReadWrite.All" },
+    { "name": "AzureAd__Scopes__Workflows__Definitions__Read__1", "value": "WorkflowDefinition.Read.All" },
+
+    { "name": "AzureAd__Scopes__Workflows__Definitions__Test__0", "value": "Workflow.Invoke.All" },
+    { "name": "AzureAd__Scopes__Workflows__Definitions__Test__1", "value": "WorkflowDefinition.Test.All" },
+
+    { "name": "AzureAd__Scopes__Workflows__Definitions__Write__0", "value": "WorkflowDefinition.ReadWrite.All" },
+    { "name": "AzureAd__Scopes__Workflows__Definitions__Write__1", "value": "WorkflowDefinition.Write.All" },
+
+    { "name": "AzureAd__Scopes__Workflows__Designer__RuntimeSelectListItems__Read__0", "value": "WorkflowDesigner.Read.All" },
+    { "name": "AzureAd__Scopes__Workflows__Features__Read__0", "value": "WorkflowDesigner.Read.All" },
+
+    { "name": "AzureAd__Scopes__Workflows__Instance__ExecutionLog__Read__0", "value": "WorkflowInstanceExecutionLog.Read.All" },
+    { "name": "AzureAd__Scopes__Workflows__Instance__Instance__Cancel__0", "value": "WorkflowInstance.Cancel.All" },
+    { "name": "AzureAd__Scopes__Workflows__Instance__Instance__Delete__0", "value": "WorkflowInstance.Delete.All" },
+    { "name": "AzureAd__Scopes__Workflows__Instance__Instance__Read__0", "value": "WorkflowInstance.Read.All" },
+    { "name": "AzureAd__Scopes__Workflows__Instance__Instance__Retry__0", "value": "WorkflowInstance.Retry.All" },
+
+    { "name": "AzureAd__Scopes__Workflows__Invoke__0", "value": "Workflow.Invoke.All" },
+
+    { "name": "AzureAd__Scopes__Workflows__Scripting__TypeDefinitions__Read__0", "value": "WorkflowDesigner.Read.All" },
+
+    { "name": "AzureAd__Scopes__Workflows__Secrets__Manage__0", "value": "WorkflowSecrets.ReadWrite.All" },
+    { "name": "AzureAd__Scopes__Workflows__Signal__InvokeByName__0", "value": "WorkflowSignal.InvokeByName.All" },
+    { "name": "AzureAd__Scopes__Workflows__WorkflowProviders__Read__0", "value": "WorkflowDesigner.Read.All" },
+    { "name": "AzureAd__Scopes__Workflows__WorkflowStorageProviders__Read__0", "value": "WorkflowDesigner.Read.All" },
+
+    { "name": "AzureAd__TenantId", "source": "TenantId" },
+
+    { "name": "Backup", "value": "True" },
+    { "name": "Backups__LocalBackupLocation", "value": "/data/backups" },
+    { "name": "BackupStorageConnectionString", "value": "" },
+    { "name": "BackupToAzureStorage", "value": "False" },
+
+    { "name": "Deleteme__ConnectionStrings__H1SQL", "value": "Server=.;Database=WorldOfWorkflows;Trusted_Connection=True;Encrypt=False;" },
+    { "name": "Deleteme__ConnectionStrings__H1WFSQlite", "value": "Data Source=/data/worldofworkflows.db;Cache=Shared;" },
+    { "name": "Deleteme__ConnectionStrings__Sqlite", "value": "Data Source=/data/worldofworkflows.db;Cache=Shared;" },
+
+    { "name": "ConnectionType", "value": "SQLite" },
+
+    { "name": "Cors__AllowedOrigins", "source": "BaseAddress" },
+
+    { "name": "Elsa__Features__Azure__ServiceBus__ConnectionStringName", "value": "AzureServiceBus" },
+    { "name": "Elsa__Features__Azure__ServiceBus__Enabled", "value": "False" },
+    { "name": "Elsa__Features__Conductor", "value": "True" },
+    { "name": "Elsa__Features__Console", "value": "True" },
+    { "name": "Elsa__Features__DefaultPersistence__ConnectionStringIdentifier", "value": "Sqlite" },
+    { "name": "Elsa__Features__DefaultPersistence__Enabled", "value": "True" },
+    { "name": "Elsa__Features__DefaultPersistence__Framework", "value": "EntityFrameworkCore" },
+    { "name": "Elsa__Features__DispatcherHangfire", "value": "False" },
+    { "name": "Elsa__Features__Email", "value": "True" },
+    { "name": "Elsa__Features__ExecuteSqlServerQuery__Enabled", "value": "True" },
+    { "name": "Elsa__Features__File", "value": "True" },
+    { "name": "Elsa__Features__Http", "value": "True" },
+    { "name": "Elsa__Features__JavaScriptActivities", "value": "True" },
+    { "name": "Elsa__Features__Mqtt__Enabled", "value": "False" },
+    { "name": "Elsa__Features__RabbitMq__ConnectionStringIdentifier", "value": "RabbitMq" },
+    { "name": "Elsa__Features__RabbitMq__Enabled", "value": "False" },
+    { "name": "Elsa__Features__Secrets__ConnectionStringIdentifier", "value": "Sqlite" },
+    { "name": "Elsa__Features__Secrets__Enabled", "value": "True" },
+    { "name": "Elsa__Features__Secrets__Framework", "value": "EntityFrameworkCore" },
+    { "name": "Elsa__Features__Secrets__Http", "value": "True" },
+    { "name": "Elsa__Features__Telnyx", "value": "True" },
+    { "name": "Elsa__Features__TemporalQuartz", "value": "True" },
+    { "name": "Elsa__Features__UserTask", "value": "True" },
+    { "name": "Elsa__Features__Webhooks__ConnectionStringIdentifier", "value": "Sqlite" },
+    { "name": "Elsa__Features__Webhooks__Enabled", "value": "True" },
+    { "name": "Elsa__Features__Webhooks__Framework", "value": "EntityFrameworkCore" },
+    { "name": "Elsa__Features__WorkflowSettings__ConnectionStringIdentifier", "value": "Sqlite" },
+    { "name": "Elsa__Features__WorkflowSettings__Enabled", "value": "True" },
+    { "name": "Elsa__Features__WorkflowSettings__Framework", "value": "EntityFrameworkCore" },
+
+    { "name": "Elsa__Retention__BatchSize", "value": "10" },
+    { "name": "Elsa__Retention__SweepInterval", "value": "1:00:00:00" },
+    { "name": "Elsa__Retention__TimeToLive", "value": "01:00:00:00" },
+
+    { "name": "Elsa__Server__BaseUrl", "source": "BaseAddress" },
+    { "name": "Elsa__Server__FrontendBaseUrl", "value": "/workflowdashboard" },
+
+    { "name": "Elsa__Smtp__DefaultSender", "value": "noreply@acme.com" },
+    { "name": "Elsa__Smtp__Host", "value": "localhost" },
+    { "name": "Elsa__Smtp__Port", "value": "2525" },
+
+    { "name": "Elsa__WorkflowChannels__Channels__0", "value": "High" },
+    { "name": "Elsa__WorkflowChannels__Channels__1", "value": "Normal" },
+    { "name": "Elsa__WorkflowChannels__Channels__2", "value": "Low" },
+    { "name": "Elsa__WorkflowChannels__Default", "value": "Normal" },
+
+    { "name": "Logging__LogLevel.Disabled__Default", "value": "Warning" },
+    { "name": "Logging__LogLevel.Disabled__HubOneWorkflows.MetaModel", "value": "Warning" },
+    { "name": "Logging__LogLevel.Disabled__Microsoft", "value": "Warning" },
+    { "name": "Logging__LogLevel.Disabled__Microsoft.EntityFrameworkCore", "value": "Warning" },
+    { "name": "Logging__LogLevel.Disabled__Microsoft.Hosting.Lifetime", "value": "Warning" },
+
+    { "name": "Solutions__StoreAccountName", "value": "wowcentralproductionstg" },
+    { "name": "Solutions__StoreListWorkflowName", "value": "ListSolutionFiles" },
+    { "name": "Solutions__WorkflowsStoreClient__BaseAddress", "value": "https://wowcentral.azurewebsites.net/" },
+
+    { "name": "Plugins__CertificatePath", "value": "./WorldOfWorkflows.cer" },
+    { "name": "Plugins__CommunityCertificateFolder", "value": "/data/plugins/Community-Certificates" },
+    { "name": "Plugins__PEDBFolder", "value": "/data/pedb" },
+    { "name": "Plugins__PluginConfigurationFile", "value": "/data/plugins/PluginConfiguration.db" },
+    { "name": "Plugins__PluginDirectory", "value": "/data/plugins" },
+    { "name": "Plugins__MaxAllowedFiles", "value": "5" },
+    { "name": "Plugins__StoreListWorkflowName", "value": "ListPluginFiles" },
+    { "name": "Plugins__StoreAccountName", "value": "wowcentralproductionstg" },
+    { "name": "Plugins__WorkflowsStoreClient__BaseAddress", "value": "https://wowcentral.azurewebsites.net/" },
+
+    { "name": "Workflows__Info__contact__email", "value": "support@worldofworkflows.com" },
+    { "name": "Workflows__Info__contact__name", "value": "API Support" },
+    { "name": "Workflows__Info__contact__url", "value": "https://worldofworkflows.com/support" },
+    { "name": "Workflows__Info__description", "value": "This is the API for this implementation of World of Workflows." },
+    { "name": "Workflows__Info__termsOfService", "value": "https://worldofworkflows.com/terms" },
+    { "name": "Workflows__Info__title", "value": "World of Workflows" },
+
+    {
+      "name": "WorldOfWorkflows__ClientConfiguration__AzureAd__Authority",
+      "source": "TenantId",
+      "format": "https://login.microsoftonline.com/{0}"
+    },
+    {
+      "name": "WorldOfWorkflows__ClientConfiguration__AzureAd__ClientId",
+      "source": "ClientClientId"
+    },
+    {
+      "name": "WorldOfWorkflows__ClientConfiguration__AzureAd__ValidateAuthority",
+      "value": "True"
+    },
+    {
+      "name": "WorldOfWorkflows__ClientConfiguration__WorldOfWorkflows__Server__Scopes__Default__0",
+      "source": "ServerClientId",
+      "format": "api://{0}/.default"
+    }
+  ],
+
+  "connectionStrings": [
+    {
+      "name": "Elsa",
+      "connectionString": "Data Source=/data/wowworkflows.db;cache=shared;",
+      "type": "Custom"
+    },
+    {
+      "name": "WorldOfWorkflows",
+      "connectionString": "Data Source=/data/wowdata.db;cache=shared;",
+      "type": "Custom"
+    }
+  ]
+}
