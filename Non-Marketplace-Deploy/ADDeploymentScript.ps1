@@ -811,23 +811,53 @@ function Write-GraphErrorDetails {
     Write-Host "Exception message: $($errorRecord.Exception.Message)" -ForegroundColor Yellow
     $resp = $errorRecord.Exception.Response
     if ($resp) {
-        Write-Host "Status code: $($resp.StatusCode.value__) $($resp.StatusDescription)" -ForegroundColor Yellow
+        $statusCode = $null
+        $statusDescription = $null
+        if ($resp.StatusCode -is [System.Enum]) {
+            $statusCode = $resp.StatusCode.value__
+        }
+        elseif ($resp.StatusCode) {
+            $statusCode = [int]$resp.StatusCode
+        }
+        if ($resp.StatusDescription) {
+            $statusDescription = $resp.StatusDescription
+        }
+        Write-Host "Status code: $statusCode $statusDescription" -ForegroundColor Yellow
+        $body = $null
         try {
-            $stream = $resp.GetResponseStream()
-            $reader = New-Object System.IO.StreamReader($stream)
-            $body   = $reader.ReadToEnd()
-            if ($body) {
-                Write-Host "Response body from Graph:" -ForegroundColor Cyan
-                Write-Host $body
+            if ($resp -is [System.Net.Http.HttpResponseMessage]) {
+                $body = $resp.Content.ReadAsStringAsync().ConfigureAwait($false).GetAwaiter().GetResult()
+            }
+            elseif ($resp -is [System.Net.WebResponse]) {
+                $stream = $resp.GetResponseStream()
+                $reader = New-Object System.IO.StreamReader($stream)
+                $body   = $reader.ReadToEnd()
             }
         } catch {
-            Write-Host "Failed to read Graph response body: $($_.Exception.Message)" -ForegroundColor Red
+            Write-Host "Failed to read Graph response body via preferred method: $($_.Exception.Message)" -ForegroundColor Red
+            $body = $null
+        }
+
+        if (-not $body) {
+            try {
+                $stream = $resp.GetStream()
+                $reader = New-Object System.IO.StreamReader($stream)
+                $body   = $reader.ReadToEnd()
+            }
+            catch {
+                Write-Host "Secondary attempt to read Graph response failed: $($_.Exception.Message)" -ForegroundColor Red
+            }
+        }
+
+        if ($body) {
+            Write-Host "Response body from Graph:" -ForegroundColor Cyan
+            Write-Host $body
         }
     }
 }
 
 $assignmentExists = $false
-$assignmentCheckUrl = "https://graph.microsoft.com/v1.0/users/$($AdminUser.Id)/appRoleAssignments?`$filter=resourceId eq `$guid('$($ServerSp.Id)') and appRoleId eq `$guid('$adminAppRoleId')"
+$assignmentCheckUrl = "https://graph.microsoft.com/v1.0/users/$($AdminUser.Id)/appRoleAssignments?`$filter=resourceId eq '$($ServerSp.Id)' and appRoleId eq '$adminAppRoleId'"
 try {
     $existingAssignmentResponse = Invoke-RestMethod `
         -Uri $assignmentCheckUrl `
