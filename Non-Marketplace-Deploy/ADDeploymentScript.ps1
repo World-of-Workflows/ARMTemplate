@@ -691,7 +691,7 @@ $PreauthApplication = @{
 
 Update-AzAdApplication -ObjectId $ServerApp.Id -Api @{ PreAuthorizedApplication = @($PreauthApplication)}
 
-$domains = Get-AzADDomain -TenantId $TenantId
+$domains = Get-AzDomain -TenantId $TenantId
 
 # --- NEW: Add the admin user as a member of the server enterprise app (Administrator role) ---
 

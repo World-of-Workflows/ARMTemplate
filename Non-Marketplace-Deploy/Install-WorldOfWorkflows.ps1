@@ -610,29 +610,37 @@ Write-Host "Ensuring Web App '$WebAppName'..." -ForegroundColor Cyan
 
 $web = Get-AzWebApp -Name $WebAppName -ResourceGroupName $ResourceGroupName -ErrorAction SilentlyContinue
 if (-not $web) {
-   Write-Host "Creating Web App..."
-$web = New-AzWebApp `
-    -Name $WebAppName `
-    -ResourceGroupName $ResourceGroupName `
-    -Location $Location `
-    -AppServicePlan $AppServicePlanName `
-    -ErrorAction Stop | Out-Null
+    Write-Host "Creating Web App..."
+    $previousProgressPreference = $ProgressPreference
+    $ProgressPreference = 'SilentlyContinue'
+    try {
+        $web = New-AzWebApp `
+            -Name $WebAppName `
+            -ResourceGroupName $ResourceGroupName `
+            -Location $Location `
+            -AppServicePlan $AppServicePlanName `
+            -ErrorAction Stop | Out-Null
+    }
+    finally {
+        $ProgressPreference = $previousProgressPreference
+        Write-Progress -Activity "Web App deployment" -Completed
+    }
 
-Write-Host "Configuring Web App for Linux .NET 8..."
+    Write-Host "Configuring Web App for Linux .NET 8..."
 
-$siteConfigObject = @{
-    linuxFxVersion = "DOTNETCORE|8.0"  # same as your ARM template
-    alwaysOn       = $true             # or $false if you prefer
-}
+    $siteConfigObject = @{
+        linuxFxVersion = "DOTNETCORE|8.0"  # same as your ARM template
+        alwaysOn       = $true             # or $false if you prefer
+    }
 
-Set-AzResource `
-    -ResourceGroupName $ResourceGroupName `
-    -ResourceType "Microsoft.Web/sites/config" `
-    -ResourceName "$WebAppName/web" `
-    -ApiVersion "2023-01-01" `
-    -PropertyObject $siteConfigObject `
-    -Force `
-    -ErrorAction Stop | Out-Null
+    Set-AzResource `
+        -ResourceGroupName $ResourceGroupName `
+        -ResourceType "Microsoft.Web/sites/config" `
+        -ResourceName "$WebAppName/web" `
+        -ApiVersion "2023-01-01" `
+        -PropertyObject $siteConfigObject `
+        -Force `
+        -ErrorAction Stop | Out-Null
 } else {
     Write-Host "Web App already exists."
 }
