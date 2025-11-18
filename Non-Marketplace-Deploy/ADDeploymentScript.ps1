@@ -805,17 +805,61 @@ Write-Host "Assigning Administrator app role via Microsoft Graph..."
 #Write-Host "Request body:"
 #Write-Host $assignmentBody
 
-try {
-$result = Invoke-RestMethod `
-    -Uri $assignUrl `
-    -Method Post `
-    -Headers $headers `
-    -Body $assignmentBody `
-    -ErrorAction Stop | Out-Null
+function Write-GraphErrorDetails {
+    param([System.Management.Automation.ErrorRecord]$errorRecord)
 
-    Write-Host "Successfully assigned Administrator role to $AdminUserPrincipalName." 
-} catch {
-    Write-Host "Did not assign Administrator role to $AdminUserPrincipalName." -ForegroundColor Red
+    Write-Host "Exception message: $($errorRecord.Exception.Message)" -ForegroundColor Yellow
+    $resp = $errorRecord.Exception.Response
+    if ($resp) {
+        Write-Host "Status code: $($resp.StatusCode.value__) $($resp.StatusDescription)" -ForegroundColor Yellow
+        try {
+            $stream = $resp.GetResponseStream()
+            $reader = New-Object System.IO.StreamReader($stream)
+            $body   = $reader.ReadToEnd()
+            if ($body) {
+                Write-Host "Response body from Graph:" -ForegroundColor Cyan
+                Write-Host $body
+            }
+        } catch {
+            Write-Host "Failed to read Graph response body: $($_.Exception.Message)" -ForegroundColor Red
+        }
+    }
+}
+
+$assignmentExists = $false
+$assignmentCheckUrl = "https://graph.microsoft.com/v1.0/users/$($AdminUser.Id)/appRoleAssignments?`$filter=resourceId eq `$guid('$($ServerSp.Id)') and appRoleId eq `$guid('$adminAppRoleId')"
+try {
+    $existingAssignmentResponse = Invoke-RestMethod `
+        -Uri $assignmentCheckUrl `
+        -Method Get `
+        -Headers $headers `
+        -ErrorAction Stop
+
+    if ($existingAssignmentResponse.value -and $existingAssignmentResponse.value.Count -gt 0) {
+        $assignmentExists = $true
+        Write-Host "Administrator role already assigned to $AdminUserPrincipalName – skipping."
+    }
+}
+catch {
+    Write-Warning "Unable to verify existing app role assignments. Attempting to assign anyway."
+    Write-GraphErrorDetails -errorRecord $_
+}
+
+if (-not $assignmentExists) {
+    try {
+        $null = Invoke-RestMethod `
+            -Uri $assignUrl `
+            -Method Post `
+            -Headers $headers `
+            -Body $assignmentBody `
+            -ErrorAction Stop
+
+        Write-Host "Successfully assigned Administrator role to $AdminUserPrincipalName."
+    }
+    catch {
+        Write-Host "Failed to assign Administrator role to $AdminUserPrincipalName." -ForegroundColor Red
+        Write-GraphErrorDetails -errorRecord $_
+    }
 }
 # Write-Host "sending token >>"
 # Write-Host $token

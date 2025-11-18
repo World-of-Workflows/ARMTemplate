@@ -434,42 +434,42 @@ switch ($planChoice) {
         $planTier    = "Basic"
         $planSkuName = "B2"
         $workerSize  = "Medium"   # matches what you have now
-        $planDescription =  "Selected: Basic B2 (1x Medium instance)" 
+        $planDescription =  "Basic B2 (1x Medium instance)" 
     }
     "2" {
         # Basic B3
         $planTier    = "Basic"
         $planSkuName = "B3"
         $workerSize  = "Large"
-        $planDescription =  "Selected: Basic B3 (1x Large instance)" 
+        $planDescription =  "Basic B3 (1x Large instance)" 
     }
     "3" {
         # Premium v3 P0v3
         $planTier    = "PremiumV3"
         $planSkuName = "P0v3"
         $workerSize  = $null
-        $planDescription =  "Selected: Premium v3 P0v3" 
+        $planDescription =  "Premium v3 P0v3" 
     }
     "4" {
         # Premium v3 P1v3
         $planTier    = "PremiumV3"
         $planSkuName = "P1v3"
         $workerSize  = $null
-        $planDescription =   "Selected: Premium v3 P1v3" 
+        $planDescription =   "Premium v3 P1v3" 
     }
     "5" {
         # Premium v3 P2v3
         $planTier    = "PremiumV3"
         $planSkuName = "P2v3"
         $workerSize  = $null
-        $planDescription =   "Selected: Premium v3 P2v3" 
+        $planDescription =   "Premium v3 P2v3" 
     }
     "6" {
         # Premium v3 P3v3
         $planTier    = "PremiumV3"
         $planSkuName = "P3v3"
         $workerSize  = $null
-        $planDescription =   "Selected: Premium v3 P3v3" 
+        $planDescription =   "Premium v3 P3v3" 
     }
 }
 
@@ -665,7 +665,7 @@ $alreadyConfigured = $false
 try {
     $listJson = az webapp config storage-account list `
         --resource-group $ResourceGroupName `
-        --name $AppServicePlanName `
+        --name $WebAppName `
         -o json 2>$null
 
     if ($LASTEXITCODE -eq 0 -and $listJson) {
@@ -690,49 +690,37 @@ catch {
 
 
 if (-not $alreadyConfigured) {
-    $azCmd = @(
-        "az webapp config storage-account add",
-        "--resource-group `"$ResourceGroupName`"",
-        "--name `"$WebAppName`"",
-        "--custom-id wowstorage",
-        "--storage-type AzureFiles",
-        "--share-name wowdata",
-        "--account-name `"$StorageAccountName`"",
-        "--access-key `"$storageKey`"",
-        "--mount-path /data"
-    ) -join " "
+    $azArgs = @(
+        "webapp", "config", "storage-account", "add",
+        "--resource-group", $ResourceGroupName,
+        "--name", $WebAppName,
+        "--custom-id", "wowstorage",
+        "--storage-type", "AzureFiles",
+        "--share-name", "wowdata",
+        "--account-name", $StorageAccountName,
+        "--access-key", $storageKey,
+        "--mount-path", "/data"
+    )
 
-    # Optional: comment this out if you don't want to echo the command
-    Write-Host "Running: $azCmd"
+    $azOutput = az @azArgs 2>&1
 
-    $azOutput = $null
-    try {
-        $azOutput = Invoke-Expression $azCmd 
-        Write-Host "azOutput>$azOutput<"
+    if ($LASTEXITCODE -ne 0) {
+        $outputText = if ($azOutput) { [string]::Join([Environment]::NewLine, $azOutput) } else { "" }
 
-        if ($LASTEXITCODE -ne 0) {
-            $outputText = [string]::Join([Environment]::NewLine, $azOutput)
-
-            Write-Host "storageOutput>$outputText<"
-            # If the only issue is "already configured", treat as success and move on silently
-            if ($outputText -like "*Site already configured with an Azure storage account with the id 'wowstorage'*") {
-                # Uncomment if you want a quiet confirmation instead of total silence:
-                # Write-Host "Azure Files mount 'wowstorage' already configured – skipping."
-            }
-            else {
-                Write-Warning "Failed to configure Azure Files mount."
-                Write-Host "Exception message:" -ForegroundColor Yellow
-                Write-Host $outputText
-                throw "az webapp config storage-account add failed with exit code $LASTEXITCODE"
-            }
+        if ($outputText -like "*Site already configured with an Azure storage account with the id 'wowstorage'*") {
+            Write-Host "Azure Files mount 'wowstorage' already configured – skipping."
         }
         else {
-            Write-Host "Azure Files mount configured: wowstorage -> /data"
+            Write-Warning "Failed to configure Azure Files mount."
+            if ($outputText) {
+                Write-Host "Exception message:" -ForegroundColor Yellow
+                Write-Host $outputText
+            }
+            throw "az webapp config storage-account add failed with exit code $LASTEXITCODE"
         }
     }
-    catch {
-        # Only rethrow if it's not the "already configured" case.
-        throw
+    else {
+        Write-Host "Azure Files mount configured: wowstorage -> /data"
     }
 
 }
