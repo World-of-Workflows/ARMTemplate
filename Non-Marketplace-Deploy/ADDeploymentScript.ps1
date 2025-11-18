@@ -46,10 +46,46 @@ function Get-ServerApplicationRoles {
         }
     }
     catch {
-        Write-Warning "Failed to retrieve appRoles via Graph for application $ApplicationObjectId: $($_.Exception.Message)"
+        Write-Warning "Failed to retrieve appRoles via Graph for application ${ApplicationObjectId}: $($_.Exception.Message)"
     }
 
     return $null
+}
+
+function Invoke-WithClaimsChallenge {
+    param(
+        [Parameter(Mandatory)]
+        [ScriptBlock] $ScriptBlock,
+
+        [Parameter(Mandatory)]
+        [string] $TenantId
+    )
+
+    $attempt = 0
+    $maxAttempts = 2
+
+    while ($attempt -lt $maxAttempts) {
+        try {
+            return & $ScriptBlock
+        }
+        catch {
+            $attempt++
+            $message = $_.Exception.Message
+            if ($attempt -ge $maxAttempts) {
+                throw
+            }
+
+            if ($message -match 'ClaimsChallenge\s+"([^"]+)"') {
+                $claimsChallenge = $matches[1]
+                Write-Warning "Entra ID requested re-authentication (claims challenge). Launching Connect-AzAccount..."
+                Connect-AzAccount -Tenant $TenantId -ClaimsChallenge $claimsChallenge | Out-Null
+                Write-Host "Re-authenticated. Retrying the previous operation..." -ForegroundColor Yellow
+            }
+            else {
+                throw
+            }
+        }
+    }
 }
 
 
@@ -89,11 +125,13 @@ if ($existingClientApps -and $existingClientApps.Count -gt 0) {
 }
 else {
     Write-Host "No existing client app found. Creating a new one: '$ClientappName'..."
-    $ClientApp = New-AzADApplication `
-        -DisplayName $ClientappName `
-        -SPARedirectUri $redirectUris `
-        -AvailableToOtherTenants $false `
-        -ErrorAction Stop
+    $ClientApp = Invoke-WithClaimsChallenge -TenantId $TenantId -ScriptBlock {
+        New-AzADApplication `
+            -DisplayName $ClientappName `
+            -SPARedirectUri $redirectUris `
+            -AvailableToOtherTenants $false `
+            -ErrorAction Stop
+    }
 
     Write-Host "Created client app:"
     Write-Host "  DisplayName : $($ClientApp.DisplayName)"
@@ -135,7 +173,9 @@ if ($existingServerApps -and $existingServerApps.Count -gt 0) {
         $ServerApp = $existingServerApp
 
         # Optionally, **refresh** credentials only if you want to rotate secrets:
-        $ServerSecret = New-AzADAppCredential -ObjectId $ServerApp.Id -EndDate ((Get-Date).AddMonths(23)) -ErrorAction Stop
+        $ServerSecret = Invoke-WithClaimsChallenge -TenantId $TenantId -ScriptBlock {
+            New-AzADAppCredential -ObjectId $ServerApp.Id -EndDate ((Get-Date).AddMonths(23)) -ErrorAction Stop
+        }
     }
     else {
         Write-Host "No existing server app found. Creating a new one: '$ServerappName'..."
@@ -154,13 +194,17 @@ if ($existingServerApps -and $existingServerApps.Count -gt 0) {
         }
 
         # Create the server application with this app role already attached
-        $ServerApp = New-AzAdApplication `
-            -DisplayName    $ServerappName `
-            -SignInAudience "AzureADMyOrg" `
-            -AppRole        @($adminRole)
+        $ServerApp = Invoke-WithClaimsChallenge -TenantId $TenantId -ScriptBlock {
+            New-AzAdApplication `
+                -DisplayName    $ServerappName `
+                -SignInAudience "AzureADMyOrg" `
+                -AppRole        @($adminRole)
+        }
 
         Write-Host "Created server app '$ServerappName' with Administrator app role Id: $script:AdminAppRoleId"
-        $ServerSecret = New-AzADAppCredential -ObjectId $ServerApp.Id -EndDate ((Get-Date).AddMonths(23)) -ErrorAction Stop
+        $ServerSecret = Invoke-WithClaimsChallenge -TenantId $TenantId -ScriptBlock {
+            New-AzADAppCredential -ObjectId $ServerApp.Id -EndDate ((Get-Date).AddMonths(23)) -ErrorAction Stop
+        }
     }
 
 if (-not $ServerApp -or [string]::IsNullOrWhiteSpace($ServerApp.Id)) {
