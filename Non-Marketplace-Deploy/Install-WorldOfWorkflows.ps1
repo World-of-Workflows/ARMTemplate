@@ -245,7 +245,7 @@ try {
         Write-Host "Ensure your browser is in the correct profile to log in to Azure with your GA account," -ForegroundColor White
         Write-Host "then press Enter to continue." -ForegroundColor White
         $null = Read-Host
-        Connect-AzAccount -ErrorAction Stop | Out-Null
+        Connect-AzAccount -Tenant $TenantId -Subscription $SubscriptionId -ErrorAction Stop | Out-Null
         $ctx = Get-AzContext
     }
     else {
@@ -891,6 +891,11 @@ if ($appSettingsSource) {
             continue
         }
 
+        $formatString = $null
+        if ($item.PSObject.Properties.Name -contains 'format' -and -not [string]::IsNullOrWhiteSpace($item.format)) {
+            $formatString = [string]$item.format
+        }
+
         # Dynamic source → Resolve-AppSettingSource
         if ($item.PSObject.Properties.Name -contains 'source' -and -not [string]::IsNullOrWhiteSpace($item.source)) {
             try {
@@ -905,6 +910,16 @@ if ($appSettingsSource) {
         else {
             # Literal value from JSON
             $value = if ($null -eq $item.value) { "" } else { [string]$item.value }
+        }
+
+        if ($formatString) {
+            try {
+                $value = [string]::Format($formatString, $value)
+            }
+            catch {
+                Write-Error "Failed to format value for appSetting '$name' with format '$formatString': $($_.Exception.Message)"
+                throw
+            }
         }
 
         # Overwrite or add
