@@ -1,0 +1,348 @@
+[
+  {
+    "value": "Tasks.Close.All",
+    "type": "Admin",
+    "adminConsentDisplayName": "Close all tasks",
+    "adminConsentDescription": "Allows the app to complete or fail any task."
+  },
+  {
+    "value": "Tasks.Unassign.AssignedTo",
+    "type": "Admin",
+    "adminConsentDisplayName": "Deallocate assigned task",
+    "adminConsentDescription": "Allows the app to deallocate (unassigned) tasks assigned to the signed-in user."
+  },
+  {
+    "value": "Tasks.AssignToSelf.Available",
+    "type": "Admin",
+    "adminConsentDisplayName": "Pick available tasks",
+    "adminConsentDescription": "Allows the app to assign unassigned tasks to the signed-in user."
+  },
+  {
+    "value": "ObjectTypes.Read.All",
+    "type": "User",
+    "adminConsentDisplayName": "Read object type definitions",
+    "adminConsentDescription": "Allows the app to read all object type definitions.",
+    "userConsentDisplayName": "Read object type definitions",
+    "userConsentDescription": "Read all table definitions"
+  },
+  {
+    "value": "Tasks.Read.AssignedTo",
+    "type": "Admin",
+    "adminConsentDisplayName": "Read object type definitions",
+    "adminConsentDescription": "Allows the app to read tasks assigned to the signed-in user."
+  },
+  {
+    "value": "Tasks.Close.AssignedTo",
+    "type": "Admin",
+    "adminConsentDisplayName": "Close assigned tasks",
+    "adminConsentDescription": "Allows the app to complete or fail tasks assigned to the signed-in user."
+  },
+  {
+    "value": "Tasks.AssignToSelf.All",
+    "type": "Admin",
+    "adminConsentDisplayName": "Pick any tasks",
+    "adminConsentDescription": "Allows the app to assign all tasks to the currently signed-in user."
+  },
+  {
+    "value": "Tasks.Assign.Available",
+    "type": "Admin",
+    "adminConsentDisplayName": "Assign available tasks to any user",
+    "adminConsentDescription": "Allows the app to assign unassigned tasks to any user."
+  },
+  {
+    "value": "Tasks.Assign.AssignedTo",
+    "type": "Admin",
+    "adminConsentDisplayName": "Reassign tasks to any user",
+    "adminConsentDescription": "Allows the app to reassign tasks assigned to the signed-in user to any other user."
+  },
+  {
+    "value": "Tasks.Assign.All",
+    "type": "Admin",
+    "adminConsentDisplayName": "Assign tasks to any user",
+    "adminConsentDescription": "Allows the app to assign all tasks to any user."
+  },
+  {
+    "value": "Tasks.Read.Assigned",
+    "type": "Admin",
+    "adminConsentDisplayName": "Read assigned tasks",
+    "adminConsentDescription": "Allows the app to read tasks assigned to the signed-in user."
+  },
+  {
+    "value": "Server.Backup",
+    "type": "Admin",
+    "adminConsentDisplayName": "Initiate database backup",
+    "adminConsentDescription": "Allows the app to initiate a backup of the database. This permission does not allow the user to download the database."
+  },
+  {
+    "value": "Identity.Read.Own",
+    "type": "Admin",
+    "adminConsentDisplayName": "Read permissions",
+    "adminConsentDescription": "Allows the app to read the permissions of the current user."
+  },
+  {
+    "value": "WorkflowSignal.InvokeByName.All",
+    "type": "User",
+    "adminConsentDisplayName": "Invoke workflow signals by name",
+    "adminConsentDescription": "Allows the app to invoke workflow signals by name.",
+    "userConsentDisplayName": "Invoke workflow signals by name",
+    "userConsentDescription": "Allows the app to invoke workflow signals by name on your behalf."
+  },
+  {
+    "value": "WorkflowSecrets.ReadWrite.All",
+    "type": "Admin",
+    "adminConsentDisplayName": "Read and write workflow secrets",
+    "adminConsentDescription": "Allows the app to read and write workflow secrets."
+  },
+  {
+    "value": "WorkflowInstanceExecutionLog.Read.All",
+    "type": "Admin",
+    "adminConsentDisplayName": "Read workflow instance execution logs",
+    "adminConsentDescription": "Allows the app to read workflow instance execution logs."
+  },
+  {
+    "value": "WorkflowInstance.Retry.All",
+    "type": "Admin",
+    "adminConsentDisplayName": "Retry workflow instances",
+    "adminConsentDescription": "Allows the app to retry workflow instances."
+  },
+  {
+    "value": "WorkflowInstance.Read.All",
+    "type": "Admin",
+    "adminConsentDisplayName": "Read workflow instances",
+    "adminConsentDescription": "Allows the app to read workflow instances."
+  },
+  {
+    "value": "WorkflowInstance.Delete.All",
+    "type": "Admin",
+    "adminConsentDisplayName": "Delete workflow instances",
+    "adminConsentDescription": "Allows the app to delete workflow instances."
+  },
+  {
+    "value": "WorkflowInstance.Cancel.All",
+    "type": "Admin",
+    "adminConsentDisplayName": "Cancel workflow instances",
+    "adminConsentDescription": "Allows the app to cancel workflow instances."
+  },
+  {
+    "value": "Tasks.Read.Available",
+    "type": "Admin",
+    "adminConsentDisplayName": "Read available tasks",
+    "adminConsentDescription": "Allows the app to read the available tasks."
+  },
+  {
+    "value": "WorkflowDesigner.Read.All",
+    "type": "Admin",
+    "adminConsentDisplayName": "Use workflow designer",
+    "adminConsentDescription": "Allows the app to use the workflow designer."
+  },
+  {
+    "value": "WorkflowDefinition.Write.All",
+    "type": "Admin",
+    "adminConsentDisplayName": "Write workflow definitions",
+    "adminConsentDescription": "Allows the app to write workflow definitions."
+  },
+  {
+    "value": "WorkflowDefinition.Test.All",
+    "type": "Admin",
+    "adminConsentDisplayName": "Test workflow definitions",
+    "adminConsentDescription": "Allows the app to test workflow definitions."
+  },
+  {
+    "value": "WorkflowDefinition.ReadWrite.All",
+    "type": "Admin",
+    "adminConsentDisplayName": "Read object type definitions",
+    "adminConsentDescription": "Allows the app to read and write workflow definitions."
+  },
+  {
+    "value": "WorkflowDefinition.Read.All",
+    "type": "Admin",
+    "adminConsentDisplayName": "Read workflow definitions",
+    "adminConsentDescription": "Allows the app to read workflow definitions."
+  },
+  {
+    "value": "WorkflowDefinition.Publish.All",
+    "type": "Admin",
+    "adminConsentDisplayName": "Publish workflow definitions",
+    "adminConsentDescription": "Allows the app to publish workflow definitions."
+  },
+  {
+    "value": "WorkflowDefinition.Delete.All",
+    "type": "Admin",
+    "adminConsentDisplayName": "Delete workflow definitions",
+    "adminConsentDescription": "Allows the app to delete workflow definitions."
+  },
+  {
+    "value": "WorkflowConductor.Invoke.Tasks",
+    "type": "Admin",
+    "adminConsentDisplayName": "Invoke workflow conductor tasks",
+    "adminConsentDescription": "Allows the app to invoke tasks for workflow conductors."
+  },
+  {
+    "value": "WorkflowConductor.Invoke.Events",
+    "type": "Admin",
+    "adminConsentDisplayName": "Invoke workflow conductor events",
+    "adminConsentDescription": "Allows the app to invoke events for workflow conductors."
+  },
+  {
+    "value": "WorkflowConductor.Invoke.All",
+    "type": "Admin",
+    "adminConsentDisplayName": "Invoke workflow conductors",
+    "adminConsentDescription": "Allows the app to invoke workflow conductors."
+  },
+  {
+    "value": "WorkflowActivityStatistics.Read.All",
+    "type": "Admin",
+    "adminConsentDisplayName": "Read workflow activity statistics",
+    "adminConsentDescription": "Allows the app to read workflow activity statistics."
+  },
+  {
+    "value": "WorkflowActivityDefinition.Read.All",
+    "type": "Admin",
+    "adminConsentDisplayName": "Read workflow activity definitions",
+    "adminConsentDescription": "Allows the app to read workflow activity definitions."
+  },
+  {
+    "value": "Workflow.Invoke.All",
+    "type": "Admin",
+    "adminConsentDisplayName": "Invoke workflows",
+    "adminConsentDescription": "Allows the app to invoke workflows on behalf of the signed-in user."
+  },
+  {
+    "value": "Views.Read.All",
+    "type": "Admin",
+    "adminConsentDisplayName": "Read view data",
+    "adminConsentDescription": "Allows the app to read the data for a view."
+  },
+  {
+    "value": "ViewDefinitions.Write.All",
+    "type": "Admin",
+    "adminConsentDisplayName": "Write view definitions",
+    "adminConsentDescription": "Allows the app to write view definitions."
+  },
+  {
+    "value": "ViewDefinitions.ReadWrite.All",
+    "type": "Admin",
+    "adminConsentDisplayName": "Read and write view defintions",
+    "adminConsentDescription": "Allows the app to read and write view definitons."
+  },
+  {
+    "value": "ViewDefinitions.Read.All",
+    "type": "Admin",
+    "adminConsentDisplayName": "Read view definitions",
+    "adminConsentDescription": "Allows the app to read view defintions."
+  },
+  {
+    "value": "Tasks.Write.All",
+    "type": "Admin",
+    "adminConsentDisplayName": "Write tasks",
+    "adminConsentDescription": "Allows the app to write tasks."
+  },
+  {
+    "value": "Tasks.ReadWrite.All",
+    "type": "Admin",
+    "adminConsentDisplayName": "Read and write tasks",
+    "adminConsentDescription": "Allows the app to read and write tasks"
+  },
+  {
+    "value": "Tasks.Read.All",
+    "type": "Admin",
+    "adminConsentDisplayName": "Read all tasks",
+    "adminConsentDescription": "Allows the app to read tasks.."
+  },
+  {
+    "value": "Server.Restart",
+    "type": "Admin",
+    "adminConsentDisplayName": "Restart the server",
+    "adminConsentDescription": "Allows the application to restart the server."
+  },
+  {
+    "value": "Server.FixElsa",
+    "type": "Admin",
+    "adminConsentDisplayName": "Repair Elsa HTTP endpoints",
+    "adminConsentDescription": "Allows the app to trigger the repair of the Elsa HTTP endpoints."
+  },
+  {
+    "value": "Plugins.Read.All",
+    "type": "Admin",
+    "adminConsentDisplayName": "Read plugins",
+    "adminConsentDescription": "Allows the app to read the installed plugins."
+  },
+  {
+    "value": "Plugins.Add",
+    "type": "Admin",
+    "adminConsentDisplayName": "Add plugins",
+    "adminConsentDescription": "Allows the app to add plugins."
+  },
+  {
+    "value": "ObjectTypes.Delete.All",
+    "type": "Admin",
+    "adminConsentDisplayName": "Delete object types",
+    "adminConsentDescription": "Allows the app to delete object types."
+  },
+  {
+    "value": "ObjectInstances.InvokeWorkflow.All",
+    "type": "Admin",
+    "adminConsentDisplayName": "Invoke object instance workflows",
+    "adminConsentDescription": "Allows the app to invoke workflows for object instances."
+  },
+  {
+    "value": "ObjectInstances.Delete.All",
+    "type": "Admin",
+    "adminConsentDisplayName": "Delete object instances",
+    "adminConsentDescription": "Allows the app to delete object instances."
+  },
+  {
+    "value": "DataTypes.Read.All",
+    "type": "Admin",
+    "adminConsentDisplayName": "Read data types",
+    "adminConsentDescription": "Allows the app to read data types."
+  },
+  {
+    "value": "CountStats.Read.All",
+    "type": "Admin",
+    "adminConsentDisplayName": "Read and count statistical counts",
+    "adminConsentDescription": "Allows the app to read the statistical counts."
+  },
+  {
+    "value": "ObjectInstances.Write.All",
+    "type": "Admin",
+    "adminConsentDisplayName": "Create and update object instances",
+    "adminConsentDescription": "Allows the app to create and update object instances"
+  },
+  {
+    "value": "ObjectInstances.Read.All",
+    "type": "Admin",
+    "adminConsentDisplayName": "Read object instances",
+    "adminConsentDescription": "Allows the app to read object instances."
+  },
+  {
+    "value": "ObjectInstances.Read.Current",
+    "type": "Admin",
+    "adminConsentDisplayName": "Read current object instance data",
+    "adminConsentDescription": "Allows the app to read current object instance data. It does not allow the app to read historical object instance data."
+  },
+  {
+    "value": "ObjectInstances.Read.Basic",
+    "type": "User",
+    "adminConsentDisplayName": "Read basic object instance info",
+    "adminConsentDescription": "Allows the app to read the ID, version, creation date, last modified date and modification reason of object instances."
+  },
+  {
+    "value": "ObjectInstances.Read.History",
+    "type": "Admin",
+    "adminConsentDisplayName": "Read object instance history",
+    "adminConsentDescription": "Allows the app to read historical object instance data. It does not allow the app to read current object instance data."
+  },
+  {
+    "value": "ObjectInstances.ReadWrite.All",
+    "type": "Admin",
+    "adminConsentDisplayName": "Read and write object instances",
+    "adminConsentDescription": "Allows the app to create and update object instances. It does not allow the app to read or delete object instances."
+  },
+  {
+    "value": "ObjectTypes.ReadWrite.All",
+    "type": "Admin",
+    "adminConsentDisplayName": "Read and write object type definitions",
+    "adminConsentDescription": "Allows the app to read, create, update and delete all object type definitions."
+  }
+]
