@@ -242,7 +242,9 @@ try {
     $ctx = Get-AzContext -ErrorAction SilentlyContinue
 
     if (-not $ctx -or -not $ctx.Account) {
-        Write-Host "No existing Azure login found. Please sign in..."
+        Write-Host "Ensure your browser is in the correct profile to log in to Azure with your GA account," -ForegroundColor White
+        Write-Host "then press Enter to continue." -ForegroundColor White
+        $null = Read-Host
         Connect-AzAccount -ErrorAction Stop | Out-Null
         $ctx = Get-AzContext
     }
@@ -758,7 +760,8 @@ $DeploymentScriptOutputs = & $adScript `
     -ServerappName $ServerAppName `
     -BaseAddress $BaseAddress `
     -TenantId $TenantId `
-    -AdminUserPrincipalName $AdminUserPrincipalName
+    -AdminUserPrincipalName $AdminUserPrincipalName `
+    -SubscriptionId $SubscriptionId
 
 Write-Host "Entra ID applications and permissions configured." -ForegroundColor Green
 Write-Host ""

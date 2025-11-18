@@ -9,7 +9,9 @@ param(
     [string] $TenantId,
 	# NEW - used to enter into Service: your user’s UPN (e.g. jim@worldofworkflows.com)
     [Parameter(Mandatory)]
-    [string] $AdminUserPrincipalName
+    [string] $AdminUserPrincipalName,
+    [Parameter(Mandatory = $false)]
+    [string] $SubscriptionId
 )
 # Setup Variables
 
@@ -58,7 +60,10 @@ function Invoke-WithClaimsChallenge {
         [ScriptBlock] $ScriptBlock,
 
         [Parameter(Mandatory)]
-        [string] $TenantId
+        [string] $TenantId,
+
+        [Parameter(Mandatory = $false)]
+        [string] $SubscriptionId
     )
 
     $attempt = 0
@@ -78,7 +83,14 @@ function Invoke-WithClaimsChallenge {
             if ($message -match 'ClaimsChallenge\s+"([^"]+)"') {
                 $claimsChallenge = $matches[1]
                 Write-Warning "Entra ID requested re-authentication (claims challenge). Launching Connect-AzAccount..."
-                Connect-AzAccount -Tenant $TenantId -ClaimsChallenge $claimsChallenge | Out-Null
+                $connectParams = @{
+                    Tenant = $TenantId
+                    ClaimsChallenge = $claimsChallenge
+                }
+                if ($SubscriptionId) {
+                    $connectParams['Subscription'] = $SubscriptionId
+                }
+                Connect-AzAccount @connectParams | Out-Null
                 Write-Host "Re-authenticated. Retrying the previous operation..." -ForegroundColor Yellow
             }
             else {
@@ -125,7 +137,7 @@ if ($existingClientApps -and $existingClientApps.Count -gt 0) {
 }
 else {
     Write-Host "No existing client app found. Creating a new one: '$ClientappName'..."
-    $ClientApp = Invoke-WithClaimsChallenge -TenantId $TenantId -ScriptBlock {
+    $ClientApp = Invoke-WithClaimsChallenge -TenantId $TenantId -SubscriptionId $SubscriptionId -ScriptBlock {
         New-AzADApplication `
             -DisplayName $ClientappName `
             -SPARedirectUri $redirectUris `
@@ -173,7 +185,7 @@ if ($existingServerApps -and $existingServerApps.Count -gt 0) {
         $ServerApp = $existingServerApp
 
         # Optionally, **refresh** credentials only if you want to rotate secrets:
-        $ServerSecret = Invoke-WithClaimsChallenge -TenantId $TenantId -ScriptBlock {
+        $ServerSecret = Invoke-WithClaimsChallenge -TenantId $TenantId -SubscriptionId $SubscriptionId -ScriptBlock {
             New-AzADAppCredential -ObjectId $ServerApp.Id -EndDate ((Get-Date).AddMonths(23)) -ErrorAction Stop
         }
     }
@@ -194,7 +206,7 @@ if ($existingServerApps -and $existingServerApps.Count -gt 0) {
         }
 
         # Create the server application with this app role already attached
-        $ServerApp = Invoke-WithClaimsChallenge -TenantId $TenantId -ScriptBlock {
+        $ServerApp = Invoke-WithClaimsChallenge -TenantId $TenantId -SubscriptionId $SubscriptionId -ScriptBlock {
             New-AzAdApplication `
                 -DisplayName    $ServerappName `
                 -SignInAudience "AzureADMyOrg" `
@@ -202,7 +214,7 @@ if ($existingServerApps -and $existingServerApps.Count -gt 0) {
         }
 
         Write-Host "Created server app '$ServerappName' with Administrator app role Id: $script:AdminAppRoleId"
-        $ServerSecret = Invoke-WithClaimsChallenge -TenantId $TenantId -ScriptBlock {
+        $ServerSecret = Invoke-WithClaimsChallenge -TenantId $TenantId -SubscriptionId $SubscriptionId -ScriptBlock {
             New-AzADAppCredential -ObjectId $ServerApp.Id -EndDate ((Get-Date).AddMonths(23)) -ErrorAction Stop
         }
     }
