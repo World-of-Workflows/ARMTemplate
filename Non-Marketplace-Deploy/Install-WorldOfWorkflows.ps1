@@ -1124,9 +1124,9 @@ Write-Host ""
 Write-Host "===========================================================================" -ForegroundColor Cyan
 Write-Host "  Deployment usually is comoplete within 10 minutes.  "-ForegroundColor Yellow
 Write-Host ""
-Write-Host "  Your new websie will be at this address: $BaseAddress within 10 minutes." -ForegroundColor Yellow
+Write-Host "  Your new websie will be at this address: " -ForegroundColor Yellow
 Write-Host "       $BaseAddress " -ForegroundColor White
-Write-Host "     within 10 minutes." -ForegroundColor Yellow
+Write-Host "  within 10 minutes." -ForegroundColor Yellow
 Write-Host ""
 Write-Host "  Contact us at " -ForegroundColor Yellow -NoNewline
 Write-Host " support@worldofworkflows.com" -ForegroundColor White -NoNewline

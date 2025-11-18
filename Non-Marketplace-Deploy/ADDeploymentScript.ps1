@@ -13,6 +13,26 @@ param(
 )
 # Setup Variables
 
+function Get-ServerApplicationRoles {
+    param(
+        [Parameter(Mandatory)]
+        [string] $ApplicationObjectId
+    )
+
+    try {
+        $uri = "https://graph.microsoft.com/v1.0/applications/$ApplicationObjectId?`$select=id,appRoles"
+        $response = Invoke-AzRestMethod -Method Get -Uri $uri -ErrorAction Stop
+        if ($response.Content) {
+            $appJson = $response.Content | ConvertFrom-Json
+            return $appJson.appRoles
+        }
+    }
+    catch {
+        Write-Warning "Failed to retrieve appRoles via Graph for application $ApplicationObjectId: $($_.Exception.Message)"
+    }
+
+    return $null
+}
 
 
 $redirectUris = @(
@@ -216,12 +236,26 @@ else {
     Write-Host "Server app already contains API scopes; skipping scope and pre-authorization configuration."
 }
 
-$serverAppCurrent = Get-AzADApplication -ObjectId $ServerApp.Id -Select "AppRoles" -ErrorAction Stop
+$serverAppRoles = Get-ServerApplicationRoles -ApplicationObjectId $ServerApp.Id
+$serverAppCurrent = Get-AzADApplication -ObjectId $ServerApp.Id -ErrorAction Stop
+if (-not $serverAppRoles -and $serverAppCurrent.AppRoles) {
+    $serverAppRoles = $serverAppCurrent.AppRoles
+}
+
+if ($serverAppRoles) {
+    Write-Host "Server app has $($serverAppRoles.Count) existing app roles."
+    $serverAppRoles | ForEach-Object {
+        Write-Host ("  Role: {0} ({1}) Enabled={2}" -f $_.DisplayName, $_.Id, $_.IsEnabled)
+    }
+}
+else {
+    Write-Host "Server app has no existing app roles."
+}
 
 # Now add the Administrator Role
 
 # See if an Administrator role already exists
-$existingAdminRole = $serverAppCurrent.AppRoles | Where-Object { $_.Value -eq "Administrator" }
+$existingAdminRole = $serverAppRoles | Where-Object { $_.Value -eq "Administrator" }
 
 if ($existingAdminRole) {
     Write-Host "Administrator appRole already exists with Id $($existingAdminRole.Id)"
@@ -239,9 +273,11 @@ else {
     }
 
     # Merge with any existing roles instead of replacing them
-    $newAppRoles = @($serverAppCurrent.AppRoles + $appRole)
+    $newAppRoles = @($serverAppRoles + $appRole)
 
     Update-AzAdApplication -ObjectId $ServerApp.Id -AppRole $newAppRoles
+
+    $serverAppRoles = $newAppRoles
 
     Write-Host "Created Administrator appRole with Id $adminGuid"
     $adminAppRoleId = $adminGuid
@@ -251,10 +287,10 @@ if (-not $adminAppRoleId) {
     throw "Administrator app role Id could not be determined. Check the existing AppRoles on $ServerappName."
 }
 
-$roleExistsOnApplication = $serverAppCurrent.AppRoles | Where-Object { $_.Id -eq $adminAppRoleId }
+$roleExistsOnApplication = $serverAppRoles | Where-Object { $_.Id -eq $adminAppRoleId }
 if (-not $roleExistsOnApplication) {
     Write-Warning "App role Id $adminAppRoleId not found on application $($ServerApp.DisplayName). Available roles:"
-    $serverAppCurrent.AppRoles | ForEach-Object {
+    $serverAppRoles | ForEach-Object {
         Write-Host ("  {0} - {1}" -f $_.DisplayName, $_.Id)
     }
 }
