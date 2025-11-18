@@ -277,7 +277,16 @@ else {
 
     Update-AzAdApplication -ObjectId $ServerApp.Id -AppRole $newAppRoles
 
-    $serverAppRoles = $newAppRoles
+    $retryCount = 0
+    $maxRetry = 5
+    do {
+        Start-Sleep -Seconds 2
+        $serverAppRoles = Get-ServerApplicationRoles -ApplicationObjectId $ServerApp.Id
+        if (-not $serverAppRoles -and $serverAppCurrent.AppRoles) {
+            $serverAppRoles = $serverAppCurrent.AppRoles
+        }
+        $retryCount++
+    } while ((-not $serverAppRoles) -and $retryCount -lt $maxRetry)
 
     Write-Host "Created Administrator appRole with Id $adminGuid"
     $adminAppRoleId = $adminGuid
