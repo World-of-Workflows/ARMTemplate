@@ -477,7 +477,7 @@ switch ($planChoice) {
 Write-Host ""
 Write-Host "Inputs:" -ForegroundColor Cyan
 Write-Host "  Tenant:                    $TenantId"
-Write-Host "  Subscription:              $SubscriptionId"
+Write-Host "  Subscription:              $subscriptionName / $SubscriptionId"
 Write-Host "  Resource Group:            $ResourceGroupName"
 Write-Host "  Location:                  $Location"
 Write-Host "  Web App:                   $WebAppName"
