@@ -182,6 +182,186 @@ function Write-GraphResponseDetails {
 }
 
 
+function Get-OrCreateServicePrincipal {
+    param(
+        [Parameter(Mandatory)]
+        $Application,
+
+        [Parameter(Mandatory)]
+        [string] $DisplayName
+    )
+
+    $servicePrincipals = Get-AzADServicePrincipal -Filter "appId eq '$($Application.AppId)'" -ErrorAction SilentlyContinue
+    if ($servicePrincipals -and $servicePrincipals.Count -gt 0) {
+        if ($servicePrincipals.Count -gt 1) {
+            Write-Warning "Multiple service principals found for application '$DisplayName'. Using the first entry."
+            return $servicePrincipals[0]
+        }
+
+        Write-Host "Service principal for '$DisplayName' already exists."
+        return $servicePrincipals
+    }
+
+    Write-Host "Creating service principal for application '$DisplayName'..."
+    return New-AzADServicePrincipal -ApplicationId $Application.AppId
+}
+
+function Ensure-ServicePrincipalOwner {
+    param(
+        [Parameter(Mandatory)]
+        $ServicePrincipal,
+
+        [Parameter(Mandatory)]
+        $User
+    )
+
+    if (-not $ServicePrincipal -or -not $User) { return }
+
+    $spName = $ServicePrincipal.DisplayName
+    $userUpn = $User.UserPrincipalName
+    Write-Host "Ensuring $userUpn is an owner of enterprise app '$spName'..."
+
+    $existingOwners = @()
+    try {
+        $existingOwners = Get-AzADServicePrincipalOwner -ObjectId $ServicePrincipal.Id -ErrorAction Stop
+    }
+    catch {
+        Write-Warning "Unable to retrieve current owners for '$spName': $($_.Exception.Message)"
+    }
+
+    if ($existingOwners) {
+        $ownerMatch = $existingOwners | Where-Object { $_.Id -eq $User.Id }
+        if ($ownerMatch) {
+            Write-Host "$userUpn is already an owner of '$spName'."
+            return
+        }
+    }
+
+    $addOwnerCmd = Get-Command -Name Add-AzADServicePrincipalOwner -ErrorAction SilentlyContinue
+
+    try {
+        if ($addOwnerCmd) {
+            Add-AzADServicePrincipalOwner -ObjectId $ServicePrincipal.Id -RefObjectId $User.Id -ErrorAction Stop | Out-Null
+            Write-Host "Added $userUpn as an owner of '$spName'."
+        }
+        else {
+            $ownerUri = "https://graph.microsoft.com/v1.0/servicePrincipals/$($ServicePrincipal.Id)/owners/`$ref"
+            $graphToken = Get-GraphAccessToken
+            $ownerBody = @{
+                "@odata.id" = "https://graph.microsoft.com/v1.0/directoryObjects/$($User.Id)"
+            } | ConvertTo-Json
+            $ownerHeaders = @{
+                "Authorization" = "Bearer $graphToken"
+                "Content-Type"  = "application/json"
+            }
+
+            $ownerResponse = Invoke-WebRequest `
+                -Uri $ownerUri `
+                -Method Post `
+                -Headers $ownerHeaders `
+                -Body $ownerBody `
+                -SkipHttpErrorCheck
+
+            if ($ownerResponse.StatusCode -ge 200 -and $ownerResponse.StatusCode -lt 300) {
+                Write-Host "Added $userUpn as an owner of '$spName' via Microsoft Graph."
+            }
+            else {
+                Write-Warning "Microsoft Graph call failed while adding $userUpn as an owner of '$spName' (HTTP $($ownerResponse.StatusCode))."
+                Write-GraphResponseDetails -Response $ownerResponse
+            }
+        }
+    }
+    catch {
+        Write-Warning "Failed to add $userUpn as an owner of '$spName': $($_.Exception.Message)"
+    }
+}
+
+function Ensure-AppRoleAssignment {
+    param(
+        [Parameter(Mandatory)]
+        $User,
+
+        [Parameter(Mandatory)]
+        $ServicePrincipal,
+
+        [Parameter(Mandatory)]
+        [Guid] $AppRoleId,
+
+        [Parameter(Mandatory)]
+        [string] $RoleDescription
+    )
+
+    if (-not $User -or -not $ServicePrincipal) { return }
+
+    $graphToken = Get-GraphAccessToken
+    $headers = @{
+        "Authorization" = "Bearer $graphToken"
+        "Content-Type"  = "application/json"
+    }
+
+    $assignmentExists = $false
+    $assignmentCheckUrl = "https://graph.microsoft.com/v1.0/users/$($User.Id)/appRoleAssignments?`$top=999"
+    try {
+        $checkResponse = Invoke-WebRequest `
+            -Uri $assignmentCheckUrl `
+            -Method Get `
+            -Headers $headers `
+            -SkipHttpErrorCheck
+
+        if ($checkResponse.StatusCode -ge 200 -and $checkResponse.StatusCode -lt 300) {
+            $existingAssignments = $checkResponse.Content | ConvertFrom-Json
+            if ($existingAssignments.value) {
+                $matchingAssignment = $existingAssignments.value | Where-Object {
+                    $_.resourceId -eq $ServicePrincipal.Id -and $_.appRoleId -eq $AppRoleId.Guid
+                }
+                if ($matchingAssignment) {
+                    $assignmentExists = $true
+                    Write-Host "$RoleDescription already assigned to $($User.UserPrincipalName) – skipping."
+                }
+            }
+        }
+        elseif ($checkResponse.StatusCode -ne 404) {
+            Write-Warning "Unable to verify existing app role assignments for $($User.UserPrincipalName) (HTTP $($checkResponse.StatusCode))."
+            Write-GraphResponseDetails -Response $checkResponse
+        }
+    }
+    catch {
+        Write-Warning "Unable to verify existing app role assignments for $($User.UserPrincipalName). Attempting to assign anyway."
+        Write-Host $_.Exception.Message -ForegroundColor Yellow
+    }
+
+    if ($assignmentExists) { return }
+
+    $assignUrl = "https://graph.microsoft.com/v1.0/users/$($User.Id)/appRoleAssignments"
+    $assignmentBody = @{
+        principalId = $User.Id
+        resourceId  = $ServicePrincipal.Id
+        appRoleId   = $AppRoleId.Guid
+    } | ConvertTo-Json
+
+    try {
+        $assignResponse = Invoke-WebRequest `
+            -Uri $assignUrl `
+            -Method Post `
+            -Headers $headers `
+            -Body $assignmentBody `
+            -ContentType "application/json" `
+            -SkipHttpErrorCheck
+
+        if ($assignResponse.StatusCode -ge 200 -and $assignResponse.StatusCode -lt 300) {
+            Write-Host "Successfully assigned $RoleDescription to $($User.UserPrincipalName)."
+        }
+        else {
+            Write-Host "Failed to assign $RoleDescription to $($User.UserPrincipalName)." -ForegroundColor Red
+            Write-GraphResponseDetails -Response $assignResponse
+        }
+    }
+    catch {
+        Write-Host "Failed to assign $RoleDescription to $($User.UserPrincipalName) due to unexpected error." -ForegroundColor Red
+        Write-Host $_.Exception.Message -ForegroundColor Yellow
+    }
+}
+
 $redirectUris = @(
     "$($BaseAddress)/authentication/login-callback",
     "$($BaseAddress)/swagger/oauth-redirect.html"
@@ -458,16 +638,9 @@ if (-not $roleExistsOnApplication) {
         Write-Host ("  {0} - {1}" -f $_.DisplayName, $_.Id)
     }
 }
-# --- Ensure a service principal (enterprise app) exists for the server app ---
-$ServerSp = Get-AzADServicePrincipal -Filter "appId eq '$($ServerApp.AppId)'"
-
-if (-not $ServerSp) {
-    Write-Host "Creating service principal for server app '$ServerappName'..."
-    $ServerSp = New-AzADServicePrincipal -ApplicationId $ServerApp.AppId 
-} else {
-    Write-Host "Service principal for server app '$ServerappName' already exists."
-}
-
+# --- Ensure service principals (enterprise apps) exist for the server and client apps ---
+$ServerSp = Get-OrCreateServicePrincipal -Application $ServerApp -DisplayName $ServerappName
+$ClientSp = Get-OrCreateServicePrincipal -Application $ClientApp -DisplayName $ClientappName
 
 $domains = Get-AzDomain -TenantId $TenantId
 
@@ -504,6 +677,16 @@ if (-not $guestUsers -or $guestUsers.Count -eq 0) {
     throw "No valid guest administrators were found. At least one valid user is required."
 }
 
+Write-Host "Ensuring admin user is configured as owner of both enterprise apps..."
+$adminUser = $guestUsers | Where-Object { $_.UserPrincipalName -eq $AdminUserPrincipalName } | Select-Object -First 1
+if ($adminUser) {
+    Ensure-ServicePrincipalOwner -ServicePrincipal $ServerSp -User $adminUser
+    Ensure-ServicePrincipalOwner -ServicePrincipal $ClientSp -User $adminUser
+}
+else {
+    Write-Warning "Admin user '$AdminUserPrincipalName' was not found in the resolved user list; skipping owner assignment."
+}
+
 Write-Host "Ensuring listed administrators are assigned to the server enterprise app as users..."
 
 Write-Host "Ensuring admin user is assigned to server app with Administrator role..."
@@ -511,8 +694,6 @@ Write-Host "Ensuring admin user is assigned to server app with Administrator rol
 # 1. Get a proper Graph token
 
 $token = Get-GraphAccessToken
-
-# Write-Host "Graph token length: $($token.Length)"
 
 # ARM / Management token (for stopping/starting Web App)
 $armTokenResponse = Get-AzAccessToken -ResourceUrl "https://management.azure.com/"
@@ -570,74 +751,29 @@ catch {
     throw    # rethrow so ARM sees the failure
 }
 
-$guestAssignmentCount = 0
-foreach ($guestUser in $guestUsers) {
-    $assignmentExists = $false
-    $assignmentCheckUrl = "https://graph.microsoft.com/v1.0/users/$($guestUser.Id)/appRoleAssignments?`$top=999"
-    try {
-        $checkResponse = Invoke-WebRequest `
-            -Uri $assignmentCheckUrl `
-            -Method Get `
-            -Headers $headers `
-            -SkipHttpErrorCheck
-
-        if ($checkResponse.StatusCode -ge 200 -and $checkResponse.StatusCode -lt 300) {
-            $existingAssignments = $checkResponse.Content | ConvertFrom-Json
-            if ($existingAssignments.value) {
-                $matchingAssignment = $existingAssignments.value | Where-Object {
-                    $_.resourceId -eq $ServerSp.Id -and $_.appRoleId -eq $adminAppRoleId
-                }
-                if ($matchingAssignment) {
-                    $assignmentExists = $true
-                    Write-Host "Administrator role already assigned to $($guestUser.UserPrincipalName) – skipping."
-                }
-            }
-        }
-        elseif ($checkResponse.StatusCode -ne 404) {
-            Write-Warning "Unable to verify existing app role assignments for $($guestUser.UserPrincipalName) (HTTP $($checkResponse.StatusCode))."
-            Write-GraphResponseDetails -Response $checkResponse
-        }
-    }
-    catch {
-        Write-Warning "Unable to verify existing app role assignments for $($guestUser.UserPrincipalName). Attempting to assign anyway."
-        Write-Host $_.Exception.Message -ForegroundColor Yellow
-    }
-
-    if (-not $assignmentExists -and $roleExistsOnApplication) {
-        $assignUrl = "https://graph.microsoft.com/v1.0/users/$($guestUser.Id)/appRoleAssignments"
-        $assignmentBody = @{
-            principalId = $guestUser.Id
-            resourceId  = $ServerSp.Id
-            appRoleId   = $adminAppRoleId
-        } | ConvertTo-Json
-
-        try {
-            $assignResponse = Invoke-WebRequest `
-                -Uri $assignUrl `
-                -Method Post `
-                -Headers $headers `
-                -Body $assignmentBody `
-                -ContentType "application/json" `
-                -SkipHttpErrorCheck
-
-            if ($assignResponse.StatusCode -ge 200 -and $assignResponse.StatusCode -lt 300) {
-                Write-Host "Successfully assigned Administrator role to $($guestUser.UserPrincipalName)."
-            }
-            else {
-                Write-Host "Failed to assign Administrator role to $($guestUser.UserPrincipalName)." -ForegroundColor Red
-                Write-GraphResponseDetails -Response $assignResponse
-            }
-        }
-        catch {
-            Write-Host "Failed to assign Administrator role to $($guestUser.UserPrincipalName) due to unexpected error." -ForegroundColor Red
-            Write-Host $_.Exception.Message -ForegroundColor Yellow
-        }
+if ($roleExistsOnApplication) {
+    foreach ($guestUser in $guestUsers) {
+        Ensure-AppRoleAssignment `
+            -User $guestUser `
+            -ServicePrincipal $ServerSp `
+            -AppRoleId $adminAppRoleId `
+            -RoleDescription "Administrator role on $ServerappName"
     }
 }
+else {
+    Write-Warning "Administrator role definition missing on $($ServerApp.DisplayName); skipping user assignments."
+}
 
-# Write-Host "sending token >>"
-# Write-Host $token
-# Write-Host "<<"
+Write-Host "Ensuring listed administrators are assigned to the client enterprise app..."
+$defaultClientRoleId = [Guid]::Empty
+foreach ($guestUser in $guestUsers) {
+    Ensure-AppRoleAssignment `
+        -User $guestUser `
+        -ServicePrincipal $ClientSp `
+        -AppRoleId $defaultClientRoleId `
+        -RoleDescription "default access to $ClientappName"
+}
+
 $DeploymentScriptOutputs = @{}
 $DeploymentScriptOutputs['ClientClientId'] = $ClientApp.AppId
 $DeploymentScriptOutputs['ServerClientId'] = $ServerApp.AppId
