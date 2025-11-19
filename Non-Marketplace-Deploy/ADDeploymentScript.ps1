@@ -241,15 +241,16 @@ function Ensure-ServicePrincipalOwner {
     $userUpn = $User.UserPrincipalName
     Write-Host "Ensuring $userUpn is an owner of enterprise app '$spName'..."
 
+<#
     $existingOwners = @()
-   # try {
-   #     $existingOwners = Get-AzADServicePrincipalOwner -ObjectId $ServicePrincipal.Id -ErrorAction Stop
-   # }
-   # catch {
-   #     Write-Warning "Unable to retrieve current owners for '$spName': $($_.Exception.Message)"
-   # }
+    try {
+        $existingOwners = Get-AzADServicePrincipalOwner -ObjectId $ServicePrincipal.Id -ErrorAction Stop
+    }
+    catch {
+        Write-Warning "Unable to retrieve current owners for '$spName': $($_.Exception.Message)"
+    }
 
-<#     if ($existingOwners) {
+     if ($existingOwners) {
         $ownerMatch = $existingOwners | Where-Object { $_.Id -eq $User.Id }
         if ($ownerMatch) {
             Write-Host "$userUpn is already an owner of '$spName'."
