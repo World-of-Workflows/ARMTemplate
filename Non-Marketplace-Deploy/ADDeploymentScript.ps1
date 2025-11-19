@@ -134,6 +134,53 @@ function Invoke-WithClaimsChallenge {
     }
 }
 
+$script:GraphAccessToken = $null
+function Get-GraphAccessToken {
+    if ($script:GraphAccessToken) {
+        return $script:GraphAccessToken
+    }
+
+    Write-Host "Getting Microsoft Graph token..."
+    $tokenResponse = Get-AzAccessToken -ResourceUrl "https://graph.microsoft.com"
+
+    if ($tokenResponse -is [System.Security.SecureString]) {
+        $bstr  = [Runtime.InteropServices.Marshal]::SecureStringToBSTR($tokenResponse)
+        $token = [Runtime.InteropServices.Marshal]::PtrToStringBSTR($bstr)
+        [Runtime.InteropServices.Marshal]::ZeroFreeBSTR($bstr)
+    }
+    elseif ($null -ne $tokenResponse.Token -and $tokenResponse.Token -is [System.Security.SecureString]) {
+        $bstr  = [Runtime.InteropServices.Marshal]::SecureStringToBSTR($tokenResponse.Token)
+        $token = [Runtime.InteropServices.Marshal]::PtrToStringBSTR($bstr)
+        [Runtime.InteropServices.Marshal]::ZeroFreeBSTR($bstr)
+    }
+    elseif ($null -ne $tokenResponse.Token) {
+        $token = [string]$tokenResponse.Token
+    }
+    else {
+        throw "Get-AzAccessToken did not return a usable Microsoft Graph token. Type: $($tokenResponse.GetType().FullName)"
+    }
+
+    $script:GraphAccessToken = $token
+    return $script:GraphAccessToken
+}
+
+function Write-GraphResponseDetails {
+    param(
+        [Parameter(Mandatory)]
+        $Response
+    )
+
+    if ($null -eq $Response) { return }
+
+    if ($Response.PSObject.Properties.Match('StatusCode')) {
+        Write-Host ("Status code: {0} {1}" -f $Response.StatusCode, $Response.StatusDescription) -ForegroundColor Yellow
+    }
+    if ($Response.PSObject.Properties.Match('Content') -and $Response.Content) {
+        Write-Host "Response body from Graph:" -ForegroundColor Cyan
+        Write-Host $Response.Content
+    }
+}
+
 
 $redirectUris = @(
     "$($BaseAddress)/authentication/login-callback",
@@ -466,6 +513,8 @@ catch {
     $existingOwners = @()
 }
 
+$addOwnerCmd = Get-Command -Name Add-AzADServicePrincipalOwner -ErrorAction SilentlyContinue
+
 foreach ($guest in $guestUsers) {
     $ownerExists = $false
     if ($existingOwners) {
@@ -474,8 +523,40 @@ foreach ($guest in $guestUsers) {
 
     if (-not $ownerExists) {
         try {
-            Add-AzADServicePrincipalOwner -ObjectId $ServerSp.Id -RefObjectId $guest.Id -ErrorAction Stop | Out-Null
-            Write-Host "Added $($guest.UserPrincipalName) as an owner of the server enterprise app."
+            if ($addOwnerCmd) {
+                Add-AzADServicePrincipalOwner -ObjectId $ServerSp.Id -RefObjectId $guest.Id -ErrorAction Stop | Out-Null
+                Write-Host "Added $($guest.UserPrincipalName) as an owner of the server enterprise app."
+            }
+            else {
+                $ownerUri = "https://graph.microsoft.com/v1.0/servicePrincipals/$($ServerSp.Id)/owners/`$ref"
+                $graphToken = Get-GraphAccessToken
+                $ownerBody = @{
+                    "@odata.id" = "https://graph.microsoft.com/v1.0/directoryObjects/$($guest.Id)"
+                } | ConvertTo-Json
+                $ownerHeaders = @{
+                    "Authorization" = "Bearer $graphToken"
+                    "Content-Type"  = "application/json"
+                }
+
+                $ownerResponse = Invoke-WebRequest `
+                    -Uri $ownerUri `
+                    -Method Post `
+                    -Headers $ownerHeaders `
+                    -Body $ownerBody `
+                    -SkipHttpErrorCheck
+
+                if ($ownerResponse.StatusCode -ge 200 -and $ownerResponse.StatusCode -lt 300) {
+                    Write-Host "Added $($guest.UserPrincipalName) as an owner of the server enterprise app via Microsoft Graph."
+                }
+                else {
+                    Write-Warning "Microsoft Graph call failed while adding $($guest.UserPrincipalName) as an owner (HTTP $($ownerResponse.StatusCode))."
+                    Write-GraphResponseDetails -Response $ownerResponse
+                }
+            }
+
+            if ($existingOwners) {
+                $existingOwners += $guest
+            }
         }
         catch {
             Write-Warning "Failed to add $($guest.UserPrincipalName) as an owner of the server enterprise app: $($_.Exception.Message)"
@@ -490,30 +571,7 @@ Write-Host "Ensuring admin user is assigned to server app with Administrator rol
 # Get token for Microsoft Graph
 # 1. Get a proper Graph token
 
-Write-Host "Getting Graph token..."
-
-$tokenResponse = Get-AzAccessToken -ResourceUrl "https://graph.microsoft.com"
-
-# Normalise everything to a plain [string] $token
-if ($tokenResponse -is [System.Security.SecureString]) {
-    # Case 1: cmdlet returned a bare SecureString
-    $bstr  = [Runtime.InteropServices.Marshal]::SecureStringToBSTR($tokenResponse)
-    $token = [Runtime.InteropServices.Marshal]::PtrToStringBSTR($bstr)
-    [Runtime.InteropServices.Marshal]::ZeroFreeBSTR($bstr)
-}
-elseif ($null -ne $tokenResponse.Token -and $tokenResponse.Token -is [System.Security.SecureString]) {
-    # Case 2: Token property is a SecureString
-    $bstr  = [Runtime.InteropServices.Marshal]::SecureStringToBSTR($tokenResponse.Token)
-    $token = [Runtime.InteropServices.Marshal]::PtrToStringBSTR($bstr)
-    [Runtime.InteropServices.Marshal]::ZeroFreeBSTR($bstr)
-}
-elseif ($null -ne $tokenResponse.Token) {
-    # Case 3: Token property is already a normal string
-    $token = [string]$tokenResponse.Token
-}
-else {
-    throw "Get-AzAccessToken did not return a usable token. Type: $($tokenResponse.GetType().FullName)"
-}
+$token = Get-GraphAccessToken
 
 # Write-Host "Graph token length: $($token.Length)"
 
@@ -571,25 +629,6 @@ catch {
     }
 
     throw    # rethrow so ARM sees the failure
-}
-
-#$adminAppRoleId = $script:AdminAppRoleId
-#Write-Host "adminAppRoleId $adminAppRoleId"
-function Write-GraphResponseDetails {
-    param(
-        [Parameter(Mandatory)]
-        $Response
-    )
-
-    if ($null -eq $Response) { return }
-
-    if ($Response.PSObject.Properties.Match('StatusCode')) {
-        Write-Host ("Status code: {0} {1}" -f $Response.StatusCode, $Response.StatusDescription) -ForegroundColor Yellow
-    }
-    if ($Response.PSObject.Properties.Match('Content') -and $Response.Content) {
-        Write-Host "Response body from Graph:" -ForegroundColor Cyan
-        Write-Host $Response.Content
-    }
 }
 
 $guestAssignmentCount = 0
