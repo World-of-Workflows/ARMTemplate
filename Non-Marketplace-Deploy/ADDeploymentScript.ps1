@@ -751,17 +751,12 @@ catch {
     throw    # rethrow so ARM sees the failure
 }
 
-if ($roleExistsOnApplication) {
-    foreach ($guestUser in $guestUsers) {
-        Ensure-AppRoleAssignment `
-            -User $guestUser `
-            -ServicePrincipal $ServerSp `
-            -AppRoleId $adminAppRoleId `
-            -RoleDescription "Administrator role on $ServerappName"
-    }
-}
-else {
-    Write-Warning "Administrator role definition missing on $($ServerApp.DisplayName); skipping user assignments."
+foreach ($guestUser in $guestUsers) {
+    Ensure-AppRoleAssignment `
+        -User $guestUser `
+        -ServicePrincipal $ServerSp `
+        -AppRoleId $adminAppRoleId `
+        -RoleDescription "Administrator role on $ServerappName"
 }
 
 Write-Host "Ensuring listed administrators are assigned to the client enterprise app..."
