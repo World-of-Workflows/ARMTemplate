@@ -103,7 +103,7 @@ function Invoke-WithClaimsChallenge {
                     Write-Host $manualCommand -ForegroundColor Cyan
                     Write-Host ""
                     Read-Host "Press Enter AFTER the manual Connect-AzAccount command completes"
-                    $manualCommand
+                    #$manualCommand
                 }
                 else {
                     Write-Warning "Entra ID requested re-authentication (claims challenge). Launching Connect-AzAccount..."
