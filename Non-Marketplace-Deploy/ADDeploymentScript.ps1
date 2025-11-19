@@ -504,68 +504,7 @@ if (-not $guestUsers -or $guestUsers.Count -eq 0) {
     throw "No valid guest administrators were found. At least one valid user is required."
 }
 
-Write-Host "Ensuring listed administrators are owners of the server enterprise app..."
-try {
-    $existingOwners = Get-AzADServicePrincipalOwner -ObjectId $ServerSp.Id -ErrorAction Stop
-}
-catch {
-    Write-Warning "Unable to retrieve current service principal owners: $($_.Exception.Message)"
-    $existingOwners = @()
-}
-
-$addOwnerCmd = Get-Command -Name Add-AzADServicePrincipalOwner -ErrorAction SilentlyContinue
-
-foreach ($guest in $guestUsers) {
-    $ownerExists = $false
-    if ($existingOwners) {
-        $ownerExists = $existingOwners | Where-Object { $_.Id -eq $guest.Id }
-    }
-
-    if (-not $ownerExists) {
-        try {
-            if ($addOwnerCmd) {
-                Add-AzADServicePrincipalOwner -ObjectId $ServerSp.Id -RefObjectId $guest.Id -ErrorAction Stop | Out-Null
-                Write-Host "Added $($guest.UserPrincipalName) as an owner of the server enterprise app."
-            }
-            else {
-                $ownerUri = "https://graph.microsoft.com/v1.0/servicePrincipals/$($ServerSp.Id)/owners/`$ref"
-                $graphToken = Get-GraphAccessToken
-                $ownerBody = @{
-                    "@odata.id" = "https://graph.microsoft.com/v1.0/directoryObjects/$($guest.Id)"
-                } | ConvertTo-Json
-                $ownerHeaders = @{
-                    "Authorization" = "Bearer $graphToken"
-                    "Content-Type"  = "application/json"
-                }
-
-                $ownerResponse = Invoke-WebRequest `
-                    -Uri $ownerUri `
-                    -Method Post `
-                    -Headers $ownerHeaders `
-                    -Body $ownerBody `
-                    -SkipHttpErrorCheck
-
-                if ($ownerResponse.StatusCode -ge 200 -and $ownerResponse.StatusCode -lt 300) {
-                    Write-Host "Added $($guest.UserPrincipalName) as an owner of the server enterprise app via Microsoft Graph."
-                }
-                else {
-                    Write-Warning "Microsoft Graph call failed while adding $($guest.UserPrincipalName) as an owner (HTTP $($ownerResponse.StatusCode))."
-                    Write-GraphResponseDetails -Response $ownerResponse
-                }
-            }
-
-            if ($existingOwners) {
-                $existingOwners += $guest
-            }
-        }
-        catch {
-            Write-Warning "Failed to add $($guest.UserPrincipalName) as an owner of the server enterprise app: $($_.Exception.Message)"
-        }
-    }
-    else {
-        Write-Host "$($guest.UserPrincipalName) is already an owner of the server enterprise app."
-    }
-}
+Write-Host "Ensuring listed administrators are assigned to the server enterprise app as users..."
 
 Write-Host "Ensuring admin user is assigned to server app with Administrator role..."
 # Get token for Microsoft Graph
