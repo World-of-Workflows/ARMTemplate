@@ -221,14 +221,14 @@ function Ensure-ServicePrincipalOwner {
     Write-Host "Ensuring $userUpn is an owner of enterprise app '$spName'..."
 
     $existingOwners = @()
-    try {
-        $existingOwners = Get-AzADServicePrincipalOwner -ObjectId $ServicePrincipal.Id -ErrorAction Stop
-    }
-    catch {
-        Write-Warning "Unable to retrieve current owners for '$spName': $($_.Exception.Message)"
-    }
+   # try {
+   #     $existingOwners = Get-AzADServicePrincipalOwner -ObjectId $ServicePrincipal.Id -ErrorAction Stop
+   # }
+   # catch {
+   #     Write-Warning "Unable to retrieve current owners for '$spName': $($_.Exception.Message)"
+   # }
 
-    if ($existingOwners) {
+<#     if ($existingOwners) {
         $ownerMatch = $existingOwners | Where-Object { $_.Id -eq $User.Id }
         if ($ownerMatch) {
             Write-Host "$userUpn is already an owner of '$spName'."
@@ -237,7 +237,7 @@ function Ensure-ServicePrincipalOwner {
     }
 
     $addOwnerCmd = Get-Command -Name Add-AzADServicePrincipalOwner -ErrorAction SilentlyContinue
-
+ #>
     try {
         if ($addOwnerCmd) {
             Add-AzADServicePrincipalOwner -ObjectId $ServicePrincipal.Id -RefObjectId $User.Id -ErrorAction Stop | Out-Null
@@ -749,18 +749,18 @@ catch {
 
     throw    # rethrow so ARM sees the failure
 }
-Write-Host "Ensuring listed administrators are assigned to the server enterprise app..."
+Write-Host "Ensuring listed administrators are assigned as users of $ServerappName, the server enterprise app..."
 $defaultServerRoleId = [Guid]::Empty
 
 foreach ($guestUser in $guestUsers) {
     Ensure-AppRoleAssignment `
         -User $guestUser `
         -ServicePrincipal $ServerSp `
-        -AppRoleId $ defaultServerRoleId #$adminAppRoleId `
+        -AppRoleId $defaultServerRoleId` #$adminAppRoleId `
         -RoleDescription "default access role on $ServerappName"
 }
 
-Write-Host "Ensuring listed administrators are assigned to the client enterprise app..."
+Write-Host "Ensuring listed administrators are assigned as users of $ClientappName, the client enterprise app..."
 $defaultClientRoleId = [Guid]::Empty
 foreach ($guestUser in $guestUsers) {
     Ensure-AppRoleAssignment `
