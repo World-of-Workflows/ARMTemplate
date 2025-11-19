@@ -892,7 +892,8 @@ $DeploymentScriptOutputs = & $adScript `
     -TenantId $TenantId `
     -AdminUserPrincipalName $AdminUserPrincipalName `
     -SubscriptionId $SubscriptionId `
-    -GuestAdmins $resolvedGuestAdmins.ToArray()
+    -GuestAdmins $resolvedGuestAdmins.ToArray() `
+    -AccountId $ctx.Account.Id
 
 Write-Host "Entra ID applications and permissions configured." -ForegroundColor Green
 Write-Host ""

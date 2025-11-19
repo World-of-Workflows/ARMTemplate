@@ -13,6 +13,8 @@ param(
     [Parameter(Mandatory = $false)]
     [string] $SubscriptionId,
     [Parameter(Mandatory = $false)]
+    [string] $AccountId,
+    [Parameter(Mandatory = $false)]
     [string[]] $GuestAdmins
 )
 # Setup Variables
@@ -65,7 +67,10 @@ function Invoke-WithClaimsChallenge {
         [string] $TenantId,
 
         [Parameter(Mandatory = $false)]
-        [string] $SubscriptionId
+        [string] $SubscriptionId,
+
+        [Parameter(Mandatory = $false)]
+        [string] $AccountId
     )
 
     $attempt = 0
@@ -73,6 +78,7 @@ function Invoke-WithClaimsChallenge {
 
     while ($attempt -lt $maxAttempts) {
         try {
+            Write-Host "running $ScriptBlock"
             return & $ScriptBlock
         }
         catch {
@@ -84,19 +90,36 @@ function Invoke-WithClaimsChallenge {
 
             if ($message -match 'ClaimsChallenge\s+"([^"]+)"') {
                 $claimsChallenge = $matches[1]
-                Write-Warning "Entra ID requested re-authentication (claims challenge)."
-                Write-Host "Ensure your browser is in the correct profile to log in to Azure with your GA account," -ForegroundColor White
-                Write-Host "then press Enter to continue." -ForegroundColor White
-                $null = Read-Host
-                $connectParams = @{
-                    Tenant = $TenantId
-                    ClaimsChallenge = $claimsChallenge
+                if ($message -match 'LocationConditionEvaluationSatisfied') {
+                    Write-Warning "Entra ID requested re-authentication due to conditional access (LocationConditionEvaluationSatisfied). Manual action required."
+                    $manualCommand = "Connect-AzAccount -Tenant $TenantId"
+                    if ($SubscriptionId) { $manualCommand += " -Subscription $SubscriptionId" }
+                    if ($AccountId) { $manualCommand += " -AccountId $AccountId" }
+                    $manualCommand += " -ClaimsChallenge `"$claimsChallenge`""
+                    Write-Host ""
+                    Write-Host "Run this command in the SAME terminal, complete the prompts, then press Enter here to continue:" -ForegroundColor Yellow
+                    Write-Host ""
+                    
+                    Write-Host $manualCommand -ForegroundColor Cyan
+                    Write-Host ""
+                    Read-Host "Press Enter AFTER the manual Connect-AzAccount command completes"
+                    $manualCommand
                 }
-                if ($SubscriptionId) {
-                    $connectParams['Subscription'] = $SubscriptionId
+                else {
+                    Write-Warning "Entra ID requested re-authentication (claims challenge). Launching Connect-AzAccount..."
+                    $connectParams = @{
+                        Tenant = $TenantId
+                        ClaimsChallenge = $claimsChallenge
+                    }
+                    if ($SubscriptionId) {
+                        $connectParams['Subscription'] = $SubscriptionId
+                    }
+                    if ($AccountId) {
+                        $connectParams['AccountId'] = $AccountId
+                    }
+                    Connect-AzAccount @connectParams | Out-Null
+                    Write-Host "Re-authenticated. Retrying the previous operation..." -ForegroundColor Yellow
                 }
-                Connect-AzAccount @connectParams | Out-Null
-                Write-Host "Re-authenticated. Retrying the previous operation..." -ForegroundColor Yellow
             }
             else {
                 throw
@@ -108,7 +131,7 @@ function Invoke-WithClaimsChallenge {
 
 $redirectUris = @(
     "$($BaseAddress)/authentication/login-callback",
-   "$($BaseAddress)/swagger/oauth-redirect.html"
+    "$($BaseAddress)/swagger/oauth-redirect.html"
 )
 
 Write-Host "Looking for existing client app '$ClientappName'..."
@@ -142,7 +165,7 @@ if ($existingClientApps -and $existingClientApps.Count -gt 0) {
 }
 else {
     Write-Host "No existing client app found. Creating a new one: '$ClientappName'..."
-    $ClientApp = Invoke-WithClaimsChallenge -TenantId $TenantId -SubscriptionId $SubscriptionId -ScriptBlock {
+    $ClientApp = Invoke-WithClaimsChallenge -TenantId $TenantId -SubscriptionId $SubscriptionId -AccountId $AccountId -ScriptBlock {
         New-AzADApplication `
             -DisplayName $ClientappName `
             -SPARedirectUri $redirectUris `
@@ -190,7 +213,7 @@ if ($existingServerApps -and $existingServerApps.Count -gt 0) {
         $ServerApp = $existingServerApp
 
         # Optionally, **refresh** credentials only if you want to rotate secrets:
-        $ServerSecret = Invoke-WithClaimsChallenge -TenantId $TenantId -SubscriptionId $SubscriptionId -ScriptBlock {
+        $ServerSecret = Invoke-WithClaimsChallenge -TenantId $TenantId -SubscriptionId $SubscriptionId -AccountId $AccountId -ScriptBlock {
             New-AzADAppCredential -ObjectId $ServerApp.Id -EndDate ((Get-Date).AddMonths(23)) -ErrorAction Stop
         }
     }
@@ -211,7 +234,7 @@ if ($existingServerApps -and $existingServerApps.Count -gt 0) {
         }
 
         # Create the server application with this app role already attached
-        $ServerApp = Invoke-WithClaimsChallenge -TenantId $TenantId -SubscriptionId $SubscriptionId -ScriptBlock {
+        $ServerApp = Invoke-WithClaimsChallenge -TenantId $TenantId -SubscriptionId $SubscriptionId -AccountId $AccountId -ScriptBlock {
             New-AzAdApplication `
                 -DisplayName    $ServerappName `
                 -SignInAudience "AzureADMyOrg" `
@@ -219,7 +242,7 @@ if ($existingServerApps -and $existingServerApps.Count -gt 0) {
         }
 
         Write-Host "Created server app '$ServerappName' with Administrator app role Id: $script:AdminAppRoleId"
-        $ServerSecret = Invoke-WithClaimsChallenge -TenantId $TenantId -SubscriptionId $SubscriptionId -ScriptBlock {
+        $ServerSecret = Invoke-WithClaimsChallenge -TenantId $TenantId -SubscriptionId $SubscriptionId -AccountId $AccountId -ScriptBlock {
             New-AzADAppCredential -ObjectId $ServerApp.Id -EndDate ((Get-Date).AddMonths(23)) -ErrorAction Stop
         }
     }
