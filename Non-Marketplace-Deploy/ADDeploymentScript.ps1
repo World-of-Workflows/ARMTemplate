@@ -78,7 +78,6 @@ function Invoke-WithClaimsChallenge {
 
     while ($attempt -lt $maxAttempts) {
         try {
-            Write-Host "running $ScriptBlock"
             return & $ScriptBlock
         }
         catch {
@@ -91,19 +90,26 @@ function Invoke-WithClaimsChallenge {
             if ($message -match 'ClaimsChallenge\s+"([^"]+)"') {
                 $claimsChallenge = $matches[1]
                 if ($message -match 'LocationConditionEvaluationSatisfied') {
-                    Write-Warning "Entra ID requested re-authentication due to conditional access (LocationConditionEvaluationSatisfied). Manual action required."
-                    $manualCommand = "Connect-AzAccount -Tenant $TenantId"
-                    if ($SubscriptionId) { $manualCommand += " -Subscription $SubscriptionId" }
-                    if ($AccountId) { $manualCommand += " -AccountId $AccountId" }
-                    $manualCommand += " -ClaimsChallenge `"$claimsChallenge`""
-                    Write-Host ""
-                    Write-Host "Run this command in the SAME terminal, complete the prompts, then press Enter here to continue:" -ForegroundColor Yellow
-                    Write-Host ""
-                    
-                    Write-Host $manualCommand -ForegroundColor Cyan
-                    Write-Host ""
-                    Read-Host "Press Enter AFTER the manual Connect-AzAccount command completes"
-                    #$manualCommand
+                    $accountUsed = $AccountId
+
+                    if (-not $accountUsed) {
+                        try {
+                            $currentContext = Get-AzContext -ErrorAction Stop
+                            if ($currentContext.Account -and $currentContext.Account.Id) {
+                                $accountUsed = $currentContext.Account.Id
+                            }
+                        }
+                        catch {
+                            # ignore failures retrieving the context
+                        }
+                    }
+
+                    if (-not $accountUsed) {
+                        $accountUsed = "an unknown account"
+                    }
+
+                    Write-Error "Conditional access blocked the automated login attempt because it was made with $accountUsed. Please close this session, sign in with the correct administrator account, and rerun the deployment."
+                    throw "Aborting deployment because login was attempted with $accountUsed."
                 }
                 else {
                     Write-Warning "Entra ID requested re-authentication (claims challenge). Launching Connect-AzAccount..."

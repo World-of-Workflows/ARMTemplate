@@ -1347,4 +1347,4 @@ Write-Host "Please login with your admin username " -ForegroundColor Yellow
                     Write-Host "⚠️ Cannot auto-open browser on this OS. Please open: $BaseAddress" -ForegroundColor Yellow
                 }
 
-                return $true
+                return 
