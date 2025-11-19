@@ -82,7 +82,10 @@ function Invoke-WithClaimsChallenge {
 
             if ($message -match 'ClaimsChallenge\s+"([^"]+)"') {
                 $claimsChallenge = $matches[1]
-                Write-Warning "Entra ID requested re-authentication (claims challenge). Launching Connect-AzAccount..."
+                Write-Warning "Entra ID requested re-authentication (claims challenge)."
+                Write-Host "Ensure your browser is in the correct profile to log in to Azure with your GA account," -ForegroundColor White
+                Write-Host "then press Enter to continue." -ForegroundColor White
+                $null = Read-Host
                 $connectParams = @{
                     Tenant = $TenantId
                     ClaimsChallenge = $claimsChallenge

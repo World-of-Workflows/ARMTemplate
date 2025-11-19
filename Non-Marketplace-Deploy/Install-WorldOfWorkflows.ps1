@@ -180,6 +180,51 @@ function Ensure-WowFileShare {
     return $share
 }
 
+function Wait-ForWebAppContent {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string] $Url,
+
+        [Parameter(Mandatory = $true)]
+        [string] $ExpectedText,
+
+        [int] $TimeoutSeconds      = 900,  # 15 minutes
+        [int] $PollIntervalSeconds = 15    # 15 seconds
+    )
+
+    Write-Host ""
+    Write-Host "Waiting for '$Url' to return content containing '$ExpectedText'..." -ForegroundColor Yellow
+    $deadline = (Get-Date).AddSeconds($TimeoutSeconds)
+
+    while ((Get-Date) -lt $deadline) {
+        try {
+            # Short timeout so we don't hang forever on a dead endpoint
+            $response = Invoke-WebRequest -Uri $Url -TimeoutSec 30 -ErrorAction Stop
+
+            $status = $response.StatusCode
+            Write-Host "  HTTP $status from $Url" -ForegroundColor DarkGray
+
+            if ($response.Content -like "*$ExpectedText*") {
+                Write-Host "  ✅ Found expected text '$ExpectedText' in response." -ForegroundColor Green
+                return $true
+            }
+            else {
+                Write-Host "  ❌ Response did not yet contain expected text. Retrying in $PollIntervalSeconds seconds..." -ForegroundColor DarkYellow
+            }
+        }
+        catch {
+            # Covers DNS errors, connection refused, 5xx, etc.
+            Write-Host "  ⚠️  Request failed: $($_.Exception.Message). Retrying in $PollIntervalSeconds seconds..." -ForegroundColor DarkYellow
+        }
+
+        Start-Sleep -Seconds $PollIntervalSeconds
+    }
+
+    Write-Host ""
+    Write-Host "❌ Timed out after $TimeoutSeconds seconds waiting for '$Url' to contain '$ExpectedText'." -ForegroundColor Red
+    return $false
+}
+
 $ErrorActionPreference = "Stop"
 $ErrorView = 'DetailedView'
 
@@ -245,7 +290,7 @@ try {
         Write-Host "Ensure your browser is in the correct profile to log in to Azure with your GA account," -ForegroundColor White
         Write-Host "then press Enter to continue." -ForegroundColor White
         $null = Read-Host
-        Connect-AzAccount -Tenant $TenantId -Subscription $SubscriptionId -ErrorAction Stop | Out-Null
+        Connect-AzAccount | Out-Null #-Tenant $TenantId -Subscription $SubscriptionId -ErrorAction Stop | Out-Null
         $ctx = Get-AzContext
     }
     else {
@@ -394,6 +439,7 @@ if (-not $PSBoundParameters.ContainsKey('Location') -or [string]::IsNullOrWhiteS
     $resolvedLocation = $null
 
     try {
+        Write-Host "Please wait a moment while we get a list of available locations from Microsoft Azure..." -ForegroundColor Gray
         $availableLocations = Get-AzLocation -ErrorAction Stop | Sort-Object Location
     }
     catch {
@@ -412,6 +458,7 @@ if (-not $PSBoundParameters.ContainsKey('Location') -or [string]::IsNullOrWhiteS
         }
 
         do {
+            Write-Host ""
             $rawInput = Read-HostChooseDefault "Enter location number or short name" $defaultLocation ($locationOptions.Location)
             if ([string]::IsNullOrWhiteSpace($rawInput)) {
                 $rawInput = $defaultLocation
@@ -1230,8 +1277,48 @@ Write-Host " if you have any questions." -ForegroundColor Yellow
 Write-Host ""
 Write-Host "===========================================================================" -ForegroundColor Cyan
 Write-Host ""
+
+# Assume you already have something like:
+# $WebAppName      = "TRIBETECHWorkflows"
+# $ResourceGroupName = "TRIBETECHWorkflowsRG"
+# $BaseAddress       = "https://$WebAppName.azurewebsites.net/"
+
+Write-Host ""
+Write-Host " Checking that World of Workflows front-end is up..." -ForegroundColor White
+
+$expectedText = "World of Workflows"  # or some other stable string in your HTML
+
+$ok = Wait-ForWebAppContent -Url $BaseAddress -ExpectedText $expectedText -TimeoutSeconds 900
+
+if (-not $ok) {
+    throw "Web app '$BaseAddress' did not return expected text '$expectedText' within the 900 second timeout."
+}
+
+Write-Host ""
+Write-Host "World of Workflows appears to be running successfully at $WebAppUrl" -ForegroundColor Yellow
 Write-Host ""
 Write-Host "===========================================================================" -ForegroundColor Cyan
 Write-Host "   World of Workflows deployment script completed.   "
 Write-Host "===========================================================================" -ForegroundColor Cyan
 Write-Host ""
+Write-Host "Press enter to launch your new World of Workflows instance.  "
+Write-Host "Please login with your admin username " -ForegroundColor Yellow
+ # -----------------------------
+                # LAUNCH WEBSITE AUTOMATICALLY
+                # -----------------------------
+                Write-Host ""
+                
+                if ($IsWindows) {
+                    Start-Process $BaseAddress
+                }
+                elseif ($IsMacOS) {
+                    & open -u $BaseAddress
+                }
+                elseif ($IsLinux) {
+                    & xdg-open $BaseAddress
+                }
+                else {
+                    Write-Host "⚠️ Cannot auto-open browser on this OS. Please open: $BaseAddress" -ForegroundColor Yellow
+                }
+
+                return $true
