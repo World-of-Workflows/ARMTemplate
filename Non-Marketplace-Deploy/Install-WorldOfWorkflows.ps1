@@ -51,6 +51,9 @@ param(
     [string]$AdminUserPrincipalName,
 
     [Parameter(Mandatory = $false)]
+    [string[]]$GuestAdmins,
+
+    [Parameter(Mandatory = $false)]
     [ValidateSet("standard","enhanced")]
     [string]$BusinessEditionSolution = "standard"
 )
@@ -432,6 +435,26 @@ if (-not $BillingEmailForWoWLicence) {
 }
 if (-not $AdminUserPrincipalName) {
     $AdminUserPrincipalName = Read-HostDefault "Enter Admin user UPN (e.g. jimc.admin@customer.com)" $ctx.Account.Id
+}
+
+$resolvedGuestAdmins = New-Object System.Collections.Generic.List[string]
+if ($GuestAdmins) {
+    foreach ($ga in $GuestAdmins) {
+        if (-not [string]::IsNullOrWhiteSpace($ga)) {
+            $resolvedGuestAdmins.Add($ga.Trim())
+        }
+    }
+}
+
+Write-Host ""
+Write-Host "Enter any guest administrators (UPNs) already existing in this tenant. Leave blank to finish." -ForegroundColor Cyan
+while ($true) {
+    $entry = Read-Host "Guest admin UPN (leave empty to finish)"
+    if ([string]::IsNullOrWhiteSpace($entry)) { break }
+    $resolvedGuestAdmins.Add($entry.Trim())
+}
+if (-not ($resolvedGuestAdmins | Where-Object { $_ -eq $AdminUserPrincipalName })) {
+    $resolvedGuestAdmins.Add($AdminUserPrincipalName)
 }
 
 if (-not $PSBoundParameters.ContainsKey('Location') -or [string]::IsNullOrWhiteSpace($Location)) {
@@ -868,7 +891,8 @@ $DeploymentScriptOutputs = & $adScript `
     -BaseAddress $BaseAddress `
     -TenantId $TenantId `
     -AdminUserPrincipalName $AdminUserPrincipalName `
-    -SubscriptionId $SubscriptionId
+    -SubscriptionId $SubscriptionId `
+    -GuestAdmins $resolvedGuestAdmins.ToArray()
 
 Write-Host "Entra ID applications and permissions configured." -ForegroundColor Green
 Write-Host ""
@@ -1251,6 +1275,7 @@ $payload = @{
     kuduUsername = $kuduUsername
     AzureToken = $AzureToken
     ARMToken = $ARMToken
+    guestAdmins = $resolvedGuestAdmins.ToArray()
 }
 
 $body = $payload | ConvertTo-Json -Depth 6
