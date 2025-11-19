@@ -287,7 +287,9 @@ function Ensure-AppRoleAssignment {
         [Guid] $AppRoleId,
 
         [Parameter(Mandatory)]
-        [string] $RoleDescription
+        [string] $RoleDescription,
+
+        [switch] $FallbackToDefaultRole
     )
 
     if (-not $User -or -not $ServicePrincipal) { return }
@@ -341,6 +343,9 @@ function Ensure-AppRoleAssignment {
         appRoleId   = $roleGuidString
     } | ConvertTo-Json
 
+    $fallbackTriggered = $false
+    $fallbackReason = $null
+
     try {
         $assignResponse = Invoke-WebRequest `
             -Uri $assignUrl `
@@ -356,11 +361,42 @@ function Ensure-AppRoleAssignment {
         else {
             Write-Host "Failed to assign $RoleDescription to $($User.UserPrincipalName)." -ForegroundColor Red
             Write-GraphResponseDetails -Response $assignResponse
+
+            if ($FallbackToDefaultRole -and $roleGuid -ne [Guid]::Empty -and $assignResponse.Content) {
+                try {
+                    $responseJson = $assignResponse.Content | ConvertFrom-Json
+                    $errorMessage = $responseJson.error.message
+                }
+                catch {
+                    $errorMessage = $assignResponse.Content
+                }
+
+                if ($errorMessage -match 'Permission being assigned was not found') {
+                    $fallbackTriggered = $true
+                    $fallbackReason = $errorMessage
+                }
+            }
         }
     }
     catch {
         Write-Host "Failed to assign $RoleDescription to $($User.UserPrincipalName) due to unexpected error." -ForegroundColor Red
         Write-Host $_.Exception.Message -ForegroundColor Yellow
+
+        if ($FallbackToDefaultRole -and $roleGuid -ne [Guid]::Empty) {
+            if ($_.Exception.Message -match 'Permission being assigned was not found') {
+                $fallbackTriggered = $true
+                $fallbackReason = $_.Exception.Message
+            }
+        }
+    }
+
+    if ($fallbackTriggered) {
+        Write-Warning "Falling back to default access role for $($User.UserPrincipalName) on $($ServicePrincipal.DisplayName): $fallbackReason"
+        Ensure-AppRoleAssignment `
+            -User $User `
+            -ServicePrincipal $ServicePrincipal `
+            -AppRoleId ([Guid]::Empty) `
+            -RoleDescription "default access role on $($ServicePrincipal.DisplayName)"
     }
 }
 
@@ -760,7 +796,8 @@ foreach ($guestUser in $guestUsers) {
         -User $guestUser `
         -ServicePrincipal $ServerSp `
         -AppRoleId  $adminAppRoleId `
-        -RoleDescription "default access role on $ServerappName"
+        -RoleDescription "Administrator role on $ServerappName" `
+        -FallbackToDefaultRole
 }
 
 Write-Host "Ensuring listed administrators are assigned as users of $ClientappName, the client enterprise app..."
