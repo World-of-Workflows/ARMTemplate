@@ -292,6 +292,9 @@ function Ensure-AppRoleAssignment {
 
     if (-not $User -or -not $ServicePrincipal) { return }
 
+    $roleGuid = [Guid]$AppRoleId
+    $roleGuidString = $roleGuid.ToString()
+
     $graphToken = Get-GraphAccessToken
     $headers = @{
         "Authorization" = "Bearer $graphToken"
@@ -311,7 +314,7 @@ function Ensure-AppRoleAssignment {
             $existingAssignments = $checkResponse.Content | ConvertFrom-Json
             if ($existingAssignments.value) {
                 $matchingAssignment = $existingAssignments.value | Where-Object {
-                    $_.resourceId -eq $ServicePrincipal.Id -and $_.appRoleId -eq $AppRoleId.Guid
+                    $_.resourceId -eq $ServicePrincipal.Id -and $_.appRoleId -eq $roleGuidString
                 }
                 if ($matchingAssignment) {
                     $assignmentExists = $true
@@ -335,7 +338,7 @@ function Ensure-AppRoleAssignment {
     $assignmentBody = @{
         principalId = $User.Id
         resourceId  = $ServicePrincipal.Id
-        appRoleId   = $AppRoleId.Guid
+        appRoleId   = $roleGuidString
     } | ConvertTo-Json
 
     try {
@@ -750,13 +753,13 @@ catch {
     throw    # rethrow so ARM sees the failure
 }
 Write-Host "Ensuring listed administrators are assigned as users of $ServerappName, the server enterprise app..."
-$defaultServerRoleId = [Guid]::Empty
+#$defaultServerRoleId = [Guid]::Empty
 
 foreach ($guestUser in $guestUsers) {
     Ensure-AppRoleAssignment `
         -User $guestUser `
         -ServicePrincipal $ServerSp `
-        -AppRoleId $defaultServerRoleId` #$adminAppRoleId `
+        -AppRoleId  $adminAppRoleId `
         -RoleDescription "default access role on $ServerappName"
 }
 
