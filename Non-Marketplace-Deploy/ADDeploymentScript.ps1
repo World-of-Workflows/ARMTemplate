@@ -58,6 +58,27 @@ function Get-ServerApplicationRoles {
     return $null
 }
 
+function Get-ServicePrincipalRoles {
+    param(
+        [Parameter(Mandatory)]
+        [string] $ServicePrincipalObjectId
+    )
+
+    try {
+        $uri = "https://graph.microsoft.com/v1.0/servicePrincipals/$ServicePrincipalObjectId?`$select=id,appRoles"
+        $response = Invoke-AzRestMethod -Method Get -Uri $uri -ErrorAction Stop
+        if ($response.Content) {
+            $spJson = $response.Content | ConvertFrom-Json
+            return $spJson.appRoles
+        }
+    }
+    catch {
+        Write-Warning "Failed to retrieve appRoles via Graph for service principal ${ServicePrincipalObjectId}: $($_.Exception.Message)"
+    }
+
+    return $null
+}
+
 function Invoke-WithClaimsChallenge {
     param(
         [Parameter(Mandatory)]
@@ -484,6 +505,7 @@ Write-Host "Looking for existing server app '$ServerappName'..."
 
 $existingServerApps = Get-AzADApplication -DisplayName $ServerappName
 $serverAppIsNew = $false
+$existingServerSp = $null
 
 if ($existingServerApps -and $existingServerApps.Count -gt 0) {
         if ($existingServerApps.Count -gt 1) {
@@ -540,6 +562,17 @@ if ($existingServerApps -and $existingServerApps.Count -gt 0) {
 
 if (-not $ServerApp -or [string]::IsNullOrWhiteSpace($ServerApp.Id)) {
     throw "ServerApp is not correctly initialised. ObjectId is empty or null."
+}
+
+try {
+    $existingServerSp = Get-AzADServicePrincipal -Filter "appId eq '$($ServerApp.AppId)'" -ErrorAction SilentlyContinue
+}
+catch {
+    Write-Warning "Unable to retrieve existing service principal for server app '$ServerappName': $($_.Exception.Message)"
+    $existingServerSp = $null
+}
+if ($existingServerSp -and $existingServerSp.Count -gt 1) {
+    $existingServerSp = $existingServerSp[0]
 }
 
 
@@ -635,6 +668,14 @@ if (-not $serverAppRoles -and $serverAppCurrent.AppRoles) {
     $serverAppRoles = $serverAppCurrent.AppRoles
 }
 
+if ((-not $serverAppRoles -or $serverAppRoles.Count -eq 0) -and $existingServerSp) {
+    $spAppRoles = Get-ServicePrincipalRoles -ServicePrincipalObjectId $existingServerSp.Id
+    if ($spAppRoles) {
+        Write-Host "Retrieved $($spAppRoles.Count) app roles from service principal '$($existingServerSp.DisplayName)'."
+        $serverAppRoles = $spAppRoles
+    }
+}
+
 if ($serverAppRoles) {
     Write-Host "Server app has $($serverAppRoles.Count) existing app roles."
     $serverAppRoles | ForEach-Object {
@@ -697,7 +738,13 @@ if (-not $roleExistsOnApplication) {
     }
 }
 # --- Ensure service principals (enterprise apps) exist for the server and client apps ---
-$ServerSp = Get-OrCreateServicePrincipal -Application $ServerApp -DisplayName $ServerappName
+if ($existingServerSp) {
+    Write-Host "Service principal for server app '$ServerappName' already exists."
+    $ServerSp = $existingServerSp
+}
+else {
+    $ServerSp = Get-OrCreateServicePrincipal -Application $ServerApp -DisplayName $ServerappName
+}
 $ClientSp = Get-OrCreateServicePrincipal -Application $ClientApp -DisplayName $ClientappName
 
 $domains = Get-AzDomain -TenantId $TenantId
@@ -827,8 +874,7 @@ foreach ($guestUser in $guestUsers) {
         -User $guestUser `
         -ServicePrincipal $ServerSp `
         -AppRoleId  $adminAppRoleId `
-        -RoleDescription "Administrator role on $ServerappName" `
-        -FallbackToDefaultRole
+        -RoleDescription "Administrator role on $ServerappName" 
 }
 
 Write-Host "Ensuring listed administrators are assigned as users of $ClientappName, the client enterprise app..."
