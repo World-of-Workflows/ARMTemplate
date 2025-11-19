@@ -190,7 +190,6 @@ function Get-OrCreateServicePrincipal {
         [Parameter(Mandatory)]
         [string] $DisplayName
     )
-
     $servicePrincipals = Get-AzADServicePrincipal -Filter "appId eq '$($Application.AppId)'" -ErrorAction SilentlyContinue
     if ($servicePrincipals -and $servicePrincipals.Count -gt 0) {
         if ($servicePrincipals.Count -gt 1) {
@@ -750,13 +749,15 @@ catch {
 
     throw    # rethrow so ARM sees the failure
 }
+Write-Host "Ensuring listed administrators are assigned to the server enterprise app..."
+$defaultServerRoleId = [Guid]::Empty
 
 foreach ($guestUser in $guestUsers) {
     Ensure-AppRoleAssignment `
         -User $guestUser `
         -ServicePrincipal $ServerSp `
-        -AppRoleId $adminAppRoleId `
-        -RoleDescription "Administrator role on $ServerappName"
+        -AppRoleId $ defaultServerRoleId #$adminAppRoleId `
+        -RoleDescription "default access role on $ServerappName"
 }
 
 Write-Host "Ensuring listed administrators are assigned to the client enterprise app..."

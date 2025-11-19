@@ -196,7 +196,7 @@ function Wait-ForWebAppContent {
     )
 
     Write-Host ""
-    Write-Host "Waiting for '$Url' to return content containing '$ExpectedText'..." -ForegroundColor Yellow
+    Write-Host "Waiting for '$Url' to be deployed - this usually takes less than 10 minutes..." -ForegroundColor Yellow
     $deadline = (Get-Date).AddSeconds($TimeoutSeconds)
 
     while ((Get-Date) -lt $deadline) {
@@ -208,16 +208,16 @@ function Wait-ForWebAppContent {
             Write-Host "  HTTP $status from $Url" -ForegroundColor DarkGray
 
             if ($response.Content -like "*$ExpectedText*") {
-                Write-Host "  ✅ Found expected text '$ExpectedText' in response." -ForegroundColor Green
+                Write-Host "  ✅ There you go, your new site '$Url' is up!" -ForegroundColor Green
                 return $true
             }
             else {
-                Write-Host "  ❌ Response did not yet contain expected text. Retrying in $PollIntervalSeconds seconds..." -ForegroundColor DarkYellow
+                Write-Host "  ⚠️ Still waiting... retrying in $PollIntervalSeconds seconds..." -ForegroundColor DarkYellow
             }
         }
         catch {
             # Covers DNS errors, connection refused, 5xx, etc.
-            Write-Host "  ⚠️  Request failed: $($_.Exception.Message). Retrying in $PollIntervalSeconds seconds..." -ForegroundColor DarkYellow
+            Write-Host "  ⚠️  Still waiting... retrying in $PollIntervalSeconds seconds..." -ForegroundColor DarkYellow
         }
 
         Start-Sleep -Seconds $PollIntervalSeconds
