@@ -396,22 +396,29 @@ function Ensure-AppRoleAssignment {
                 }
                 if ($matchingAssignment) {
                     $assignmentExists = $true
-                    Write-Host "$RoleDescription already assigned to $($User.UserPrincipalName) – skipping."
+                    Write-Host "$RoleDescription already assigned to $($User.DisplayName) – skipping."
                 }
             }
         }
         elseif ($checkResponse.StatusCode -ne 404) {
-            Write-Warning "Unable to verify existing app role assignments for $($User.UserPrincipalName) (HTTP $($checkResponse.StatusCode))."
+            Write-Warning "Unable to verify existing app role assignments for $($User.DisplayName) (HTTP $($checkResponse.StatusCode))."
             Write-GraphResponseDetails -Response $checkResponse
         }
     }
     catch {
-        Write-Warning "Unable to verify existing app role assignments for $($User.UserPrincipalName). Attempting to assign anyway."
+        Write-Warning "Unable to verify existing app role assignments for $($User.DisplayName). Attempting to assign anyway."
         Write-Host $_.Exception.Message -ForegroundColor Yellow
     }
 
     if ($assignmentExists) { return }
 
+   <#  # we need to use /groups/ if there is no $User.UserPrincipalName 
+    if ($user.UserPrincipalName) {
+        $assignUrl = "https://graph.microsoft.com/v1.0/users/$($User.Id)/appRoleAssignments"
+    } else {
+        $assignUrl = "https://graph.microsoft.com/v1.0/groups/$($User.Id)/appRoleAssignments"
+ 
+    } #>
     $assignUrl = "https://graph.microsoft.com/v1.0/users/$($User.Id)/appRoleAssignments"
     $assignmentBody = @{
         principalId = $User.Id
@@ -429,15 +436,15 @@ function Ensure-AppRoleAssignment {
             -SkipHttpErrorCheck
 
         if ($assignResponse.StatusCode -ge 200 -and $assignResponse.StatusCode -lt 300) {
-            Write-Host "Successfully assigned $RoleDescription to $($User.UserPrincipalName)."
+            Write-Host "Successfully assigned $RoleDescription to $($User.DisplayName)."
         }
         else {
-            Write-Host "Failed to assign $RoleDescription to $($User.UserPrincipalName)." -ForegroundColor Red
+            Write-Host "Failed to assign $RoleDescription to $($User.DisplayName)." -ForegroundColor Red
             Write-GraphResponseDetails -Response $assignResponse
         }
     }
     catch {
-        Write-Host "Failed to assign $RoleDescription to $($User.UserPrincipalName) due to unexpected error." -ForegroundColor Red
+        Write-Host "Failed to assign $RoleDescription to $($User.DisplayName) due to unexpected error." -ForegroundColor Red
         Write-Host $_.Exception.Message -ForegroundColor Yellow
     }
 }
@@ -506,7 +513,7 @@ Write-Host "Looking for existing server app '$ServerappName'..."
 
 $existingServerApps = Get-AzADApplication -DisplayName $ServerappName
 $serverAppIsNew = $false
-$existingServerSp = $null
+#$existingServerSp = $null
 
 if ($existingServerApps -and $existingServerApps.Count -gt 0) {
         if ($existingServerApps.Count -gt 1) {
@@ -565,7 +572,7 @@ if (-not $ServerApp -or [string]::IsNullOrWhiteSpace($ServerApp.Id)) {
     throw "ServerApp is not correctly initialised. ObjectId is empty or null."
 }
 
-try {
+<# try {
     $existingServerSp = Get-AzADServicePrincipal -Filter "appId eq '$($ServerApp.AppId)'" -ErrorAction SilentlyContinue
 }
 catch {
@@ -574,18 +581,9 @@ catch {
 }
 if ($existingServerSp -and $existingServerSp.Count -gt 1) {
     $existingServerSp = $existingServerSp[0]
-}
+} #>
 
-
-$serverAppCurrent = Get-AzADApplication -ObjectId $ServerApp.Id -Select "AppRoles" -ErrorAction Stop
-if ($serverAppCurrent.AppRoles) {
-    Write-Host "Server app has $($serverAppCurrent.AppRoles.Count) existing app roles."
-    $serverAppCurrent.AppRoles | ForEach-Object {
-        Write-Host ("  Role: {0} ({1}) Enabled={2}" -f $_.DisplayName, $_.Id, $_.IsEnabled)
-    }
-} else {
-    Write-Host "Server app has no existing app roles."
-}
+#$serverAppCurrent = Get-AzADApplication -ObjectId $ServerApp.Id -Select "AppRoles" -ErrorAction Stop
 
 if ($serverAppIsNew) {
     # Now Creating Identifier URLs
@@ -663,19 +661,27 @@ else {
     Write-Host "Server app already contains API scopes; skipping scope and pre-authorization configuration."
 }
 
-$serverAppRoles = Get-ServerApplicationRoles -ApplicationObjectId $ServerApp.Id
-$serverAppCurrent = Get-AzADApplication -ObjectId $ServerApp.Id -ErrorAction Stop
-if (-not $serverAppRoles -and $serverAppCurrent.AppRoles) {
-    $serverAppRoles = $serverAppCurrent.AppRoles
+if ($serverApp.AppRoles) {
+    Write-Host "Server app has $($serverApp.AppRoles.Count) existing app roles."
+    $serverApp.AppRoles | ForEach-Object {
+        Write-Host ("  Role: {0} ({1}) Enabled={2}" -f $_.DisplayName, $_.Id, $_.IsEnabled)
+    }
+} else {
+    Write-Host "Server app has no existing app roles."
 }
 
-if ((-not $serverAppRoles -or $serverAppRoles.Count -eq 0) -and $existingServerSp) {
-    $spAppRoles = Get-ServicePrincipalRoles -ServicePrincipalObjectId $existingServerSp.Id
+$serverAppCurrent = Get-AzADApplication -ObjectId $ServerApp.Id -ErrorAction Stop
+if ($serverAppCurrent ) {
+    $serverAppRoles = $serverAppCurrent.AppRole
+}
+
+<# if ((-not $serverAppRoles -or $serverAppRoles.Count -eq 0) -and $ServerApp) {
+    $spAppRoles = Get-ServicePrincipalRoles -ServicePrincipalObjectId $ServerApp.Id
     if ($spAppRoles) {
         Write-Host "Retrieved $($spAppRoles.Count) app roles from service principal '$($existingServerSp.DisplayName)'."
         $serverAppRoles = $spAppRoles
     }
-}
+} #>
 
 if ($serverAppRoles) {
     Write-Host "Server app has $($serverAppRoles.Count) existing app roles."
@@ -739,13 +745,13 @@ if (-not $roleExistsOnApplication) {
     }
 }
 # --- Ensure service principals (enterprise apps) exist for the server and client apps ---
-if ($existingServerSp) {
+<# if ($existingServerSp) {
     Write-Host "Service principal for server app '$ServerappName' already exists."
     $ServerSp = $existingServerSp
 }
-else {
-    $ServerSp = Get-OrCreateServicePrincipal -Application $ServerApp -DisplayName $ServerappName
-}
+else { #>
+$ServerSp = Get-OrCreateServicePrincipal -Application $ServerApp -DisplayName $ServerappName
+#}
 $ClientSp = Get-OrCreateServicePrincipal -Application $ClientApp -DisplayName $ClientappName
 
 $domains = Get-AzDomain -TenantId $TenantId
@@ -771,8 +777,12 @@ if ($allGuestAdmins -and $allGuestAdmins.Count -gt 0) {
         $user = Get-AzADUser -Filter "userPrincipalName eq '$guestUpn'"
 
         if (-not $user) {
-            Write-Warning "Could not find user with UPN '$guestUpn' in the tenant. Skipping."
-            continue
+            Write-Warning "Looking for '$guestUpn' as a group, instead of a user..."
+            $user = Get-AzADGroup -Filter "startsWith(Mail, '$guestUpn')"
+            if (-not $user) {
+                Write-Warning "Could not find a group with email '$guestUpn' in the tenant. Skipping."
+                continue
+            }
         }
 
         $guestUsers += $user
@@ -841,8 +851,7 @@ $headers = @{
 try {
     $me = Invoke-RestMethod -Uri "https://graph.microsoft.com/v1.0/me" -Headers $headers -Method Get -ErrorAction Stop
     Write-Host "Graph /me OK. User:" $me.userPrincipalName
-}
-catch {
+} catch {
     Write-Host "Graph call /ME FAILED:" -ForegroundColor Red
     Write-Host "Exception message: $($_.Exception.Message)" -ForegroundColor Yellow
 
@@ -867,6 +876,7 @@ catch {
 
     throw    # rethrow so ARM sees the failure
 }
+
 Write-Host "Ensuring listed administrators are assigned as users of $ServerappName, the server enterprise app..."
 #$defaultServerRoleId = [Guid]::Empty
 
