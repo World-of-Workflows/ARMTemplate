@@ -200,6 +200,7 @@ function Wait-ForWebAppContent {
     $deadline = (Get-Date).AddSeconds($TimeoutSeconds)
 
     while ((Get-Date) -lt $deadline) {
+        Start-Sleep -Seconds $PollIntervalSeconds
         try {
             # Short timeout so we don't hang forever on a dead endpoint
             $response = Invoke-WebRequest -Uri $Url -TimeoutSec 30 -ErrorAction Stop
@@ -335,9 +336,10 @@ for ($i = 0; $i -lt $subscriptions.Count; $i++) {
 }
 
 Write-Host ""
-$index = Read-Host "Enter the number of the subscription to use"
+$indexInput = Read-Host "Enter the number of the subscription to use"
 
-if (-not ($index -as [int]) -or $index -lt 0 -or $index -ge $subscriptions.Count) {
+[int]$index = 0
+if (-not [int]::TryParse($indexInput, [ref]$index) -or $index -lt 0 -or $index -ge $subscriptions.Count) {
     Write-Error "Invalid selection. Aborting."
     return
 }

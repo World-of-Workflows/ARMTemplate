@@ -451,6 +451,8 @@ function Ensure-AppRoleAssignment {
 
 $redirectUris = @(
     "$($BaseAddress)/authentication/login-callback",
+    "$($BaseAddress)/callback",
+    "$($BaseAddress)/secure",
     "$($BaseAddress)/swagger/oauth-redirect.html"
 )
 
