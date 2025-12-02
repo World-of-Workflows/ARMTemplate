@@ -183,6 +183,71 @@ function Ensure-WowFileShare {
     return $share
 }
 
+function Ensure-ResourceProviders {
+    param(
+        [Parameter(Mandatory)]
+        [string[]]$ProviderNamespaces,
+        [int]$TimeoutSeconds = 900,
+        [int]$PollSeconds = 10
+    )
+
+    foreach ($provider in $ProviderNamespaces) {
+        $deadline = (Get-Date).AddSeconds($TimeoutSeconds)
+        $attemptedRegister = $false
+
+        try {
+            $rp = Get-AzResourceProvider -ProviderNamespace $provider -ErrorAction Stop
+        }
+        catch {
+            Write-Warning "Could not query provider '$provider': $($_.Exception.Message)"
+            continue
+        }
+
+        if ($rp.RegistrationState -eq "Registered") {
+            Write-Host "Resource provider '$provider' already registered."
+            continue
+        }
+
+        Write-Host "Provider '$provider' state: $($rp.RegistrationState). Monitoring until Registered..." -ForegroundColor Yellow
+
+        while ((Get-Date) -lt $deadline) {
+            if (-not $attemptedRegister -and $rp.RegistrationState -notin @("Registering","Registered")) {
+                Write-Host "Registering resource provider '$provider'..." -ForegroundColor Yellow
+                try {
+                    Register-AzResourceProvider -ProviderNamespace $provider -ErrorAction Stop | Out-Null
+                }
+                catch {
+                    Write-Warning "Failed to register provider '$provider' via PowerShell: $($_.Exception.Message)"
+                    Write-Host "If you registered it in the Azure portal, we'll keep checking until it becomes Registered." -ForegroundColor Yellow
+                }
+                $attemptedRegister = $true
+            }
+
+            Start-Sleep -Seconds $PollSeconds
+
+            try {
+                # -ListAvailable often reflects refreshed state sooner than cached results
+                $rp = Get-AzResourceProvider -ProviderNamespace $provider -ListAvailable -ErrorAction Stop
+            }
+            catch {
+                Write-Warning "Could not refresh provider '$provider': $($_.Exception.Message)"
+                continue
+            }
+
+            if ($rp.RegistrationState -eq "Registered") {
+                Write-Host "Resource provider '$provider' is now registered."
+                break
+            }
+
+            Write-Host "Waiting for provider '$provider' to register (current state: $($rp.RegistrationState))..." -ForegroundColor DarkYellow
+        }
+
+        if ($rp.RegistrationState -ne "Registered") {
+            throw "Provider '$provider' is still not Registered after waiting ${TimeoutSeconds}s. Please register it in the Azure portal and rerun."
+        }
+    }
+}
+
 function Wait-ForWebAppContent {
     param(
         [Parameter(Mandatory = $true)]
@@ -349,15 +414,22 @@ $SubscriptionId = $selectedSub.Id
 $TenantId       = $selectedSub.TenantId
 $subscriptionName = $selectedSub.Name
 
-# Write-Host ""
-# Write-Host "Using subscription:" -ForegroundColor Cyan
-# Write-Host "  Name:    $($selectedSub.Name)"
-# Write-Host "  ID:      $SubscriptionId"
-# Write-Host "  Tenant:  $TenantId"
-# Write-Host ""
+Write-Host ""
+Write-Host "Using subscription:" -ForegroundColor Cyan
+Write-Host "  Name:    $($selectedSub.Name)"
+Write-Host "  ID:      $SubscriptionId"
+Write-Host "  Tenant:  $TenantId"
+Write-Host ""
 
 Write-Host "Setting Az context..." -ForegroundColor Cyan
 Set-AzContext -SubscriptionId $SubscriptionId -Tenant $TenantId -ErrorAction Stop | Out-Null
+
+$subCheck = Get-AzSubscription -SubscriptionId $SubscriptionId -ErrorAction SilentlyContinue
+if (-not $subCheck) {
+    Write-Host "Re-authenticating for subscription $SubscriptionId in tenant $TenantId..." -ForegroundColor Yellow
+    Connect-AzAccount -Tenant $TenantId -Subscription $SubscriptionId -ErrorAction Stop | Out-Null
+    Set-AzContext -SubscriptionId $SubscriptionId -Tenant $TenantId -ErrorAction Stop | Out-Null
+}
 
 $ctx = Get-AzContext
 
@@ -366,6 +438,13 @@ Write-Host "  Account:      $($ctx.Account.Id)"
 Write-Host "  Tenant:       $($ctx.Tenant.Id)"
 Write-Host "  Subscription: $($ctx.Subscription.Name) ($($ctx.Subscription.Id))"
 Write-Host ""
+
+# Ensure needed resource providers are registered before creating resources
+$requiredProviders = @(
+    "Microsoft.Storage",
+    "Microsoft.Web"
+)
+Ensure-ResourceProviders -ProviderNamespaces $requiredProviders
 
 #Write-Host "Ensuring Azure CLI is logged into correct tenant & subscription..."
 
