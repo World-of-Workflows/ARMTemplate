@@ -197,21 +197,24 @@ function Ensure-ResourceProviders {
 
         try {
             $rp = Get-AzResourceProvider -ProviderNamespace $provider -ErrorAction Stop
+            $rp = @($rp)[0]
         }
         catch {
             Write-Warning "Could not query provider '$provider': $($_.Exception.Message)"
             continue
         }
 
-        if ($rp.RegistrationState -eq "Registered") {
+        $state = $rp.RegistrationState
+
+        if ($state -eq "Registered") {
             Write-Host "Resource provider '$provider' already registered."
             continue
         }
 
-        Write-Host "Provider '$provider' state: $($rp.RegistrationState). Monitoring until Registered..." -ForegroundColor Yellow
+        Write-Host "Provider '$provider' state: $state. Monitoring until Registered..." -ForegroundColor Yellow
 
         while ((Get-Date) -lt $deadline) {
-            if (-not $attemptedRegister -and $rp.RegistrationState -notin @("Registering","Registered")) {
+            if (-not $attemptedRegister -and $state -notin @("Registering","Registered")) {
                 Write-Host "Registering resource provider '$provider'..." -ForegroundColor Yellow
                 try {
                     Register-AzResourceProvider -ProviderNamespace $provider -ErrorAction Stop | Out-Null
@@ -226,23 +229,32 @@ function Ensure-ResourceProviders {
             Start-Sleep -Seconds $PollSeconds
 
             try {
-                # -ListAvailable often reflects refreshed state sooner than cached results
-                $rp = Get-AzResourceProvider -ProviderNamespace $provider -ListAvailable -ErrorAction Stop
+                $rp = Get-AzResourceProvider -ProviderNamespace $provider -ErrorAction Stop
+                $rp = @($rp)[0]
             }
             catch {
-                Write-Warning "Could not refresh provider '$provider': $($_.Exception.Message)"
-                continue
+                # Some Az versions don't like ProviderNamespace + ListAvailable; try list and filter
+                try {
+                    $allRps = Get-AzResourceProvider -ListAvailable -ErrorAction Stop
+                    $rp = $allRps | Where-Object { $_.ProviderNamespace -eq $provider } | Select-Object -First 1
+                }
+                catch {
+                    Write-Warning "Could not refresh provider '$provider': $($_.Exception.Message)"
+                    continue
+                }
             }
 
-            if ($rp.RegistrationState -eq "Registered") {
+            $state = $rp.RegistrationState
+
+            if ($state -eq "Registered") {
                 Write-Host "Resource provider '$provider' is now registered."
                 break
             }
 
-            Write-Host "Waiting for provider '$provider' to register (current state: $($rp.RegistrationState))..." -ForegroundColor DarkYellow
+            Write-Host "Waiting for provider '$provider' to register (current state: $state)..." -ForegroundColor DarkYellow
         }
 
-        if ($rp.RegistrationState -ne "Registered") {
+        if ($state -ne "Registered") {
             throw "Provider '$provider' is still not Registered after waiting ${TimeoutSeconds}s. Please register it in the Azure portal and rerun."
         }
     }
