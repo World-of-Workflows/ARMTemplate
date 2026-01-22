@@ -358,12 +358,14 @@ Write-Host ""
 Write-Host "-----------------------------------------------------" -ForegroundColor Cyan
 Write-Host ""
 # ------------------------------------------------
-# 1. Connect to Azure and choose a subscription
+# 1. Disconnecting and recconnecting to Azure and choose a subscription
 # ------------------------------------------------
 
 Write-Host "Connecting to Azure..." -ForegroundColor Cyan
 
 try {
+    Disconnect-AzAccount
+    az logout
     # Try to reuse existing Az context
     $ctx = Get-AzContext -ErrorAction SilentlyContinue
 
