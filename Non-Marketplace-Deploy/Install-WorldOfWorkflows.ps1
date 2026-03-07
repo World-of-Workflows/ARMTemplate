@@ -260,6 +260,152 @@ function Ensure-ResourceProviders {
     }
 }
 
+function Test-WowWebAppNameAvailability {
+    param(
+        [Parameter(Mandatory)]
+        [string]$Name
+    )
+
+    if ([string]::IsNullOrWhiteSpace($Name)) {
+        return [pscustomobject]@{
+            NameAvailable = $false
+            Reason        = "Invalid"
+            Message       = "Web app name cannot be empty."
+        }
+    }
+
+    try {
+        $result = $null
+
+        if (Get-Command -Name Test-AzWebAppNameAvailability -ErrorAction SilentlyContinue) {
+            try {
+                $result = Test-AzWebAppNameAvailability -Name $Name -ErrorAction Stop
+            }
+            catch {
+                Write-Verbose "Test-AzWebAppNameAvailability failed: $($_.Exception.Message)"
+            }
+        }
+
+        if (-not $result) {
+            $payload = @{
+                name = $Name
+                type = "Microsoft.Web/sites"
+            } | ConvertTo-Json
+
+            $apiVersionsToTry = @(
+                "2025-03-01",
+                "2024-11-01"
+            )
+
+            $lastRestError = $null
+            foreach ($apiVersion in $apiVersionsToTry) {
+                try {
+                    $resp = Invoke-AzRestMethod `
+                        -Path "/subscriptions/$SubscriptionId/providers/Microsoft.Web/checknameavailability?api-version=$apiVersion" `
+                        -Method POST `
+                        -Payload $payload `
+                        -ErrorAction Stop
+
+                    $result = $resp.Content | ConvertFrom-Json
+                    break
+                }
+                catch {
+                    $lastRestError = $_
+                    Write-Verbose "Invoke-AzRestMethod checknameavailability failed for api-version=$apiVersion : $($_.Exception.Message)"
+                }
+            }
+
+            if (-not $result) {
+                throw $lastRestError
+            }
+        }
+
+        Write-Verbose ("Web app name availability raw response: " + ($result | ConvertTo-Json -Depth 6 -Compress))
+
+        $availablePropertyNames = @("NameAvailable", "nameAvailable", "Available", "available", "IsAvailable", "IsNameAvailable")
+        $rawNameAvailable = $null
+
+        foreach ($propName in $availablePropertyNames) {
+            if ($result.PSObject.Properties.Name -contains $propName) {
+                $rawNameAvailable = $result.$propName
+                break
+            }
+        }
+
+        if ($null -eq $rawNameAvailable) {
+            throw "Name availability response did not contain an availability field."
+        }
+
+        $nameAvailable = $false
+        if ($rawNameAvailable -is [bool]) {
+            $nameAvailable = $rawNameAvailable
+        }
+        elseif ($rawNameAvailable -is [string]) {
+            $parsedBool = $false
+            if ([bool]::TryParse($rawNameAvailable, [ref]$parsedBool)) {
+                $nameAvailable = $parsedBool
+            }
+            else {
+                $nameAvailable = $rawNameAvailable -eq "1"
+            }
+        }
+        else {
+            $nameAvailable = [bool]$rawNameAvailable
+        }
+
+        $reason = $null
+        foreach ($propName in @("Reason", "reason")) {
+            if ($result.PSObject.Properties.Name -contains $propName) {
+                $reason = [string]$result.$propName
+                break
+            }
+        }
+
+        $message = $null
+        foreach ($propName in @("Message", "message", "Details", "details")) {
+            if ($result.PSObject.Properties.Name -contains $propName) {
+                $message = [string]$result.$propName
+                break
+            }
+        }
+
+        return [pscustomobject]@{
+            NameAvailable = $nameAvailable
+            Reason        = $reason
+            Message       = $message
+        }
+    }
+    catch {
+        Write-Warning "Could not validate web app name availability for '$Name': $($_.Exception.Message)"
+        return [pscustomobject]@{
+            NameAvailable = $true
+            Reason        = "Unknown"
+            Message       = "Availability check failed; continuing."
+        }
+    }
+}
+
+function Write-WowWebAppNameUnavailable {
+    param(
+        [Parameter(Mandatory)]
+        [string]$Name,
+
+        [string]$Reason,
+        [string]$Message
+    )
+
+    Write-Host ""
+    Write-Host "Web App name unavailable" -ForegroundColor Red
+    Write-Host "  Name:    $Name" -ForegroundColor Yellow
+    if (-not [string]::IsNullOrWhiteSpace($Reason)) {
+        Write-Host "  Reason:  $Reason" -ForegroundColor Yellow
+    }
+    if (-not [string]::IsNullOrWhiteSpace($Message)) {
+        Write-Host "  Details: $Message" -ForegroundColor Yellow
+    }
+    Write-Host ""
+}
+
 function Wait-ForWebAppContent {
     param(
         [Parameter(Mandatory = $true)]
@@ -357,6 +503,7 @@ Write-Host "    or type a different value if preferred." -ForegroundColor White
 Write-Host ""
 Write-Host "-----------------------------------------------------" -ForegroundColor Cyan
 Write-Host ""
+
 # ------------------------------------------------
 # 1. Disconnecting and recconnecting to Azure and choose a subscription
 # ------------------------------------------------
@@ -499,7 +646,52 @@ if ($LASTEXITCODE -ne 0) {
 # ------------------------------------------------
 
 if (-not $WebAppName) {
-    $WebAppName = Read-HostDefault "Enter Web App name (e.g. TribetechWorkflows)" (($ctx.Tenant.Name -split '\s+')[0]+"Workflows")
+    $defaultWebAppName = ((($ctx.Tenant.Name -split '\s+')[0]+"Workflows").ToLowerInvariant())
+
+    while ($true) {
+        $candidateWebAppName = (Read-HostDefault "Enter Web App name (e.g. TribetechWorkflows)" $defaultWebAppName).Trim().ToLowerInvariant()
+
+        if ($candidateWebAppName -notmatch '^[a-z0-9](?:[a-z0-9-]{0,58}[a-z0-9])?$') {
+            Write-WowWebAppNameUnavailable `
+                -Name $candidateWebAppName `
+                -Reason "Invalid" `
+                -Message "Use 2-60 characters: lowercase letters, numbers, and hyphens only; cannot start or end with a hyphen."
+            Write-Host "Please choose a different Web App name." -ForegroundColor Yellow
+            continue
+        }
+
+        $nameCheck = Test-WowWebAppNameAvailability -Name $candidateWebAppName
+
+        if ($nameCheck.NameAvailable) {
+            $WebAppName = $candidateWebAppName
+            break
+        }
+
+        Write-WowWebAppNameUnavailable `
+            -Name $candidateWebAppName `
+            -Reason $nameCheck.Reason `
+            -Message $nameCheck.Message
+        Write-Host "Please choose a different Web App name." -ForegroundColor Yellow
+    }
+}
+else {
+    $WebAppName = $WebAppName.Trim().ToLowerInvariant()
+    if ($WebAppName -notmatch '^[a-z0-9](?:[a-z0-9-]{0,58}[a-z0-9])?$') {
+        Write-WowWebAppNameUnavailable `
+            -Name $WebAppName `
+            -Reason "Invalid" `
+            -Message "Use 2-60 characters: lowercase letters, numbers, and hyphens only; cannot start or end with a hyphen."
+        return
+    }
+
+    $nameCheck = Test-WowWebAppNameAvailability -Name $WebAppName
+    if (-not $nameCheck.NameAvailable) {
+        Write-WowWebAppNameUnavailable `
+            -Name $WebAppName `
+            -Reason $nameCheck.Reason `
+            -Message $nameCheck.Message
+        return
+    }
 }
 
 if (-not $ResourceGroupName) {
@@ -1317,6 +1509,33 @@ if (-not $publisherSp) {
 } else {
     Write-Host "Publisher service principal already exists in customer tenant. ObjectId: $($publisherSp.Id)"
 }
+# ------------------------------------------------
+# 8.6 Grant admin consent for WOW publisher app (CRITICAL)
+# ------------------------------------------------
+
+Write-Host ""
+Write-Host "Granting admin consent for World of Workflows deployment access..." -ForegroundColor Cyan
+
+$redirectUri = "https://wowcentral.azurewebsites.net/adminConsentCallback"
+
+$consentUrl = "https://login.microsoftonline.com/$TenantId/adminconsent" +
+              "?client_id=$publisherAppId" +
+              "&redirect_uri=$([System.Web.HttpUtility]::UrlEncode($redirectUri))" +
+              "&state=wow"
+
+Start-Process $consentUrl
+
+Write-Host ""
+Write-Host "Accept the consent request in the browser." -ForegroundColor Yellow
+Write-Host "This is a one-time action per tenant." -ForegroundColor Yellow
+Write-Host ""
+Write-Host "Press Enter once consent is complete." -ForegroundColor White
+$null = Read-Host
+
+
+# ------------------------------------------------
+# 8.7 Assign RBAC
+# ------------------------------------------------
 
 # Now assign RBAC on the WoW resource group (or subscription)
 $scope = "/subscriptions/$SubscriptionId/resourceGroups/$ResourceGroupName"

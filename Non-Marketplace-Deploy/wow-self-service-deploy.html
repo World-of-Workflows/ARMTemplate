@@ -1,0 +1,288 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>World of Workflows Business Edition Deployment</title>
+  <style>
+    :root {
+      --bg: #f4f7fb;
+      --panel: #ffffff;
+      --text: #10233d;
+      --muted: #4f647f;
+      --line: #d8e1ec;
+      --brand: #005a9c;
+      --brand-strong: #00467a;
+      --warn: #9c5a00;
+      --err: #a62222;
+      --ok: #1d7f3f;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+      background: radial-gradient(circle at top right, #e8f2ff 0, var(--bg) 55%);
+      color: var(--text);
+    }
+
+    .wrap {
+      max-width: 1080px;
+      margin: 0 auto;
+      padding: 24px 16px 48px;
+    }
+
+    h1 {
+      margin: 0 0 8px;
+      font-size: 28px;
+      line-height: 1.2;
+    }
+
+    p.lead {
+      margin: 0 0 16px;
+      color: var(--muted);
+    }
+
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 16px;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .full { grid-column: 1 / -1; }
+
+    label {
+      display: block;
+      font-size: 13px;
+      margin-bottom: 4px;
+      color: var(--muted);
+    }
+
+    input, select, textarea {
+      width: 100%;
+      padding: 9px 10px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      font-size: 14px;
+      color: var(--text);
+      background: #fff;
+    }
+
+    textarea { min-height: 90px; resize: vertical; }
+
+    .row {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    button {
+      border: 1px solid var(--brand);
+      background: var(--brand);
+      color: #fff;
+      border-radius: 8px;
+      padding: 9px 12px;
+      font-size: 14px;
+      cursor: pointer;
+    }
+
+    button.secondary {
+      background: #fff;
+      color: var(--brand-strong);
+      border-color: var(--brand-strong);
+    }
+
+    button:disabled {
+      opacity: 0.55;
+      cursor: not-allowed;
+    }
+
+    .hint {
+      font-size: 12px;
+      color: var(--muted);
+      margin-top: 4px;
+    }
+
+    .state {
+      font-size: 13px;
+      margin-top: 6px;
+      min-height: 18px;
+    }
+
+    .ok { color: var(--ok); }
+    .warn { color: var(--warn); }
+    .err { color: var(--err); }
+
+    .radio-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 14px;
+      font-size: 14px;
+    }
+
+    .radio-row label {
+      margin: 0;
+      color: var(--text);
+    }
+
+    .status-box {
+      background: #091a2f;
+      color: #d3e8ff;
+      border-radius: 8px;
+      padding: 12px;
+      font-family: Menlo, Monaco, Consolas, monospace;
+      font-size: 12px;
+      white-space: pre-wrap;
+      max-height: 280px;
+      overflow: auto;
+    }
+
+    .pre {
+      margin: 8px 0 0;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    @media (max-width: 860px) {
+      .grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>World of Workflows Business Edition</h1>
+    <p class="lead">Self-service Azure deployment wizard (PowerShell parity).</p>
+
+    <div class="panel">
+      <h2>1. Sign In</h2>
+      <p class="pre">Use your existing WoW MSAL/OBO integration. The page expects <code>window.wowAuth</code> to provide login and token methods.</p>
+      <div class="row">
+        <button id="btnLogin" type="button">Sign In To Azure</button>
+        <button id="btnLoadSubs" class="secondary" type="button">Load Subscriptions</button>
+      </div>
+      <div id="authState" class="state"></div>
+    </div>
+
+    <form id="deployForm" class="panel">
+      <h2>2. Deployment Inputs</h2>
+      <div class="grid">
+        <div>
+          <label for="subscriptionId">Subscription</label>
+          <select id="subscriptionId" required></select>
+        </div>
+        <div>
+          <label for="tenantId">Tenant ID</label>
+          <input id="tenantId" readonly />
+        </div>
+
+        <div>
+          <label for="webAppName">Web App Name</label>
+          <input id="webAppName" required maxlength="60" autocomplete="off" />
+          <div class="hint">Lowercase letters, numbers, hyphens; cannot start/end with hyphen.</div>
+        </div>
+        <div>
+          <label>&nbsp;</label>
+          <div class="row">
+            <button id="btnCheckName" class="secondary" type="button">Check Availability</button>
+          </div>
+          <div id="nameState" class="state"></div>
+        </div>
+
+        <div>
+          <label for="resourceGroupName">Resource Group Name</label>
+          <input id="resourceGroupName" required />
+        </div>
+        <div>
+          <label for="appServicePlanName">App Service Plan Name</label>
+          <input id="appServicePlanName" required />
+        </div>
+
+        <div>
+          <label for="storageAccountName">Storage Account Name</label>
+          <input id="storageAccountName" required maxlength="24" />
+          <div class="hint">Lowercase letters and digits only, 3-24 chars.</div>
+        </div>
+        <div>
+          <label for="location">Location</label>
+          <select id="location" required></select>
+        </div>
+
+        <div>
+          <label for="clientAppName">Entra Client App Name</label>
+          <input id="clientAppName" required />
+        </div>
+        <div>
+          <label for="serverAppName">Entra Server App Name</label>
+          <input id="serverAppName" required />
+        </div>
+
+        <div>
+          <label for="companyNameForWoWLicence">Company Name (WoW Licence)</label>
+          <input id="companyNameForWoWLicence" required />
+        </div>
+        <div>
+          <label for="billingEmailForWoWLicence">Billing Email (WoW Licence)</label>
+          <input id="billingEmailForWoWLicence" type="email" required />
+        </div>
+
+        <div>
+          <label for="adminUserPrincipalName">Admin User UPN</label>
+          <input id="adminUserPrincipalName" required />
+        </div>
+        <div>
+          <label for="guestAdmins">Guest Admin UPNs (one per line)</label>
+          <textarea id="guestAdmins" placeholder="guest1@contoso.com&#10;guest2@contoso.com"></textarea>
+        </div>
+
+        <div class="full">
+          <label>Business Edition Solution</label>
+          <div class="radio-row">
+            <label><input type="radio" name="businessEditionSolution" value="standard" checked /> Standard installation</label>
+            <label><input type="radio" name="businessEditionSolution" value="standardAdditionalServer" /> Standard with additional server</label>
+          </div>
+        </div>
+
+        <div class="full">
+          <label for="planChoice">App Service Plan Size</label>
+          <select id="planChoice" required>
+            <option value="1">1) Basic B2 (default)</option>
+            <option value="2">2) Basic B3</option>
+            <option value="3">3) Premium v3 P0v3</option>
+            <option value="4">4) Premium v3 P1v3</option>
+            <option value="5">5) Premium v3 P2v3</option>
+            <option value="6">6) Premium v3 P3v3</option>
+          </select>
+        </div>
+
+        <div class="full">
+          <label><input id="confirmProceed" type="checkbox" /> I confirm these inputs are correct and want to proceed.</label>
+        </div>
+
+        <div class="full row">
+          <button id="btnStart" type="submit">Start Deployment</button>
+          <button id="btnCancelJob" class="secondary" type="button" disabled>Cancel Running Job</button>
+        </div>
+      </div>
+    </form>
+
+    <div class="panel">
+      <h2>3. Job Status</h2>
+      <div id="jobState" class="state"></div>
+      <div id="jobOutputs" class="pre"></div>
+      <div id="jobLogs" class="status-box">No job started.</div>
+    </div>
+  </div>
+
+  <script src="./wow-self-service-deploy.js"></script>
+</body>
+</html>
